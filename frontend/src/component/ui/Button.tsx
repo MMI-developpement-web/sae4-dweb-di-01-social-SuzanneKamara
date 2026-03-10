@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils.ts";
 import type { ReactNode } from "react";
 
-import Icons from "./icon";
+import Icons from "./Icon.tsx";
 
 const buttonVariants = cva("font-medium rounded-md", {
   variants: {

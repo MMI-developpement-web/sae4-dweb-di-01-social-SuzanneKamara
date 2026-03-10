@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils.ts";
-import Avatar from "./avatar";
+import Avatar from "./Avatar.tsx";
 const groupVariants = cva("inline-flex justify-start items-center", {
   variants: {}});
 

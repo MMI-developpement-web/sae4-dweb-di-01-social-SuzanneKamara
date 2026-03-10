@@ -2,8 +2,9 @@ import { useState } from 'react'
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/vite.svg'
 import './App.css'
-import Button from './component/ui/button'
-import Badge from './component/ui/badge'
+import Button from './component/ui/Button'
+import Badge from './component/ui/Badge'
+import Input from './component/ui/Input'
 
 function App() {
  
@@ -24,6 +25,7 @@ function App() {
     <Badge type='warning' size='lg'>Warning</Badge>
     <Badge type='error' size='sm'>Error</Badge>
     <Badge type='default' size='md'>Default</Badge>
+    <Input placeholder="Enter your email" type="email"></Input>
    </div>
     </>
   )
