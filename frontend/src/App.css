@@ -1,3 +1,23 @@
+/* Thème par défaut */
+:root {
+  --color-primary: #1d9bf0; /* Bleu Twitter */
+  --color-background: #ffffff;
+  --color-text: #0f172a;
+}
+
+/* Thème alternatif */
+[data-theme="instagram"] {
+  --color-primary: #0095f6; /* Bleu Instagram */
+  --color-background: #fafafa;
+}
+
+/* Mode sombre */
+[data-theme="twitter-dark"] {
+  --color-primary: #1d9bf0;
+  --color-background: #000000;
+  --color-text: #e7e9ea;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
