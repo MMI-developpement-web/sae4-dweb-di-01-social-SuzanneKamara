@@ -15,9 +15,11 @@ const buttonVariants = cva("font-medium rounded-md", {
         ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500",
         outline:
           "border border-gray-300 bg-transparent hover:bg-gray-50 focus:ring-gray-500",
+        pink: "bg-pink-600 text-white hover:bg-pink-700 focus:ring-pink-500",
+        black:"w-48 h-10 bg-black text-white hover:bg-gray-800 focus:ring-gray-500"
       },
       size: {
-        sm: "h-8 px-3 text-sm",
+        sm: "h-8 px-2 text-sm",
         md: "h-10 px-4",
         lg: "h-12 px-6 text-lg",
       },
@@ -39,33 +41,24 @@ const buttonVariants = cva("font-medium rounded-md", {
 });
 
 interface ButtonDataProps {
-  children: ReactNode;
+  children?: ReactNode;
   icon?: string;
 }
 
-interface ButtonViewProps extends VariantProps<typeof buttonVariants> {
-//   className?: string;
-}
-
-interface ButtonProps extends ButtonDataProps, ButtonViewProps {}
+interface ButtonProps extends ButtonDataProps, VariantProps<typeof buttonVariants> {}
 
 export default function Button({
   children,
   variant,
-//   iconState,
   size,
-    icon,
-//   className,
+  icon,
   ...props
-}: ButtonProps) {
-//    const icon = !icon ? "hidden" : iconState;
- const displayIconState = icon ? "shown" : "hidden";
+}: ButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  const displayIconState = icon ? "shown" : "hidden";
 
-
-    return (
-      <button className={cn(buttonVariants({ variant}))}>
-
-        <Icons icon={icon} variant={displayIconState} />
+  return (
+    <button className={cn(buttonVariants({ variant, size }))} {...props}>
+      <Icons icon={icon} variant={displayIconState} />
       {children}
     </button>
   );

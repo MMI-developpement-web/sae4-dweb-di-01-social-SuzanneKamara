@@ -8,4 +8,12 @@
 #   bin/console debug:router
 
 controllers:
-    resource: routing.controllers
+       resource: ../src/Controller/
+       type: attribute
+       exclude: ../src/Controller/Api/
+
+api_controllers:
+       resource: ../src/Controller/Api/
+       type: attribute
+       prefix: /api
+       name_prefix: api_

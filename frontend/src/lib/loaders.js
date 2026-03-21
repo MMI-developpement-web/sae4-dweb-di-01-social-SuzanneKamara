@@ -1,28 +1,56 @@
-import { fakeNetwork } from "./utils";
+import { fakeNetwork } from './utils';
+import { apiFetchJson } from './api';
+import { buildApiUrl } from './apiConfig';
 
-export async function fetchOurTeams(teamName){
+const API_ENDPOINTS = {
+    users: '/users',
+    tweets: '/tweets',
+    hashtags: '/hashtags',
+    likes: '/likes',
+    media: '/media',
+};
+
+async function fetchApiData(path) {
+    return apiFetchJson(buildApiUrl(path));
+}
+
+export async function fetchUsers(userId = null) {
     await fakeNetwork();
-    let answer = await fetch('/src/lib/data/teams-data.json');
-    let data = await answer.json();
-    return data[teamName];
-}
-
-export async function fetchTestimonialData(teamName){
-    let answer = await fetch('/src/lib/data/testimonial-data.json');
-    let data = await answer.json();
-    data = data[teamName];
-    // choose 3 random testimonies
-    let testimonies = [];
-    for(let i=0; i<3; i++){
-        let index = Math.floor(Math.random() * data.length); // random index
-        testimonies.push(data[index]); // add to testimonies
-        data.splice(index, 1); // remove from data to avoid duplicates
+    if (userId) {
+        const encodedUserId = encodeURIComponent(userId);
+        return fetchApiData(`${API_ENDPOINTS.users}/${encodedUserId}`);
     }
-    return testimonies;
+    return fetchApiData(API_ENDPOINTS.users);
 }
 
-export async function fetchPricingData(){
-    let answer = await fetch('/src/lib/data/pricing-data.json');
-    let data = await answer.json();
-    return data;  
+export async function fetchTweets(userId = null) {
+    await fakeNetwork();
+    if (userId) {
+        const encodedUserId = encodeURIComponent(userId);
+        return fetchApiData(`${API_ENDPOINTS.tweets}?userId=${encodedUserId}`);
+    }
+    return fetchApiData(API_ENDPOINTS.tweets);
+}
+
+export async function fetchHashtags() {
+    await fakeNetwork();
+    return fetchApiData(API_ENDPOINTS.hashtags);
+}
+
+export async function fetchLikes(tweetId = null) {
+    await fakeNetwork();
+    if (tweetId) {
+        const encodedTweetId = encodeURIComponent(tweetId);
+        return fetchApiData(`${API_ENDPOINTS.likes}?tweetId=${encodedTweetId}`);
+    }
+    return fetchApiData(API_ENDPOINTS.likes);
+}
+
+export async function fetchMedia(mediaId = null) {
+    await fakeNetwork();
+    if (mediaId) {
+        const encodedMediaId = encodeURIComponent(mediaId);
+        return fetchApiData(`${API_ENDPOINTS.media}/${encodedMediaId}`);
+    }
+    return fetchApiData(API_ENDPOINTS.media);
 }

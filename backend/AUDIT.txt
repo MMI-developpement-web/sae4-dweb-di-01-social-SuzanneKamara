@@ -1,0 +1,381 @@
+================================================================================
+AUDIT COMPLET - BACKEND SYMFONY 7.4
+SAE4 - Réseau social
+Date: 20 mars 2026
+================================================================================
+
+1. INFORMATIONS GENERALES
+================================================================================
+- Framework: Symfony 7.4
+- PHP: >= 8.2
+- Base de données: PostgreSQL (configurée)
+- Authentification: JWT (Lexik JWT Bundle)
+- État: Production
+
+2. STRUCTURE DU PROJET
+================================================================================
+✓ Structure classique Symfony respectée
+✓ Bundles activés:
+  - FrameworkBundle
+  - MakerBundle (dev)
+  - DoctrineBundle
+  - DoctrineMigrationsBundle
+  - SecurityBundle
+  - LexikJWTAuthenticationBundle
+
+3. CONFIGURATION
+================================================================================
+
+3.1 SECURITE (security.yaml)
+✓ Authentification JWT configurée
+✓ Firewall login avec check_path /api/login_check
+✓ Firewall API avec JWT
+✓ Password hasher automatique (auto)
+✓ Access control défini
+
+Configuration des routes publiques:
+  - GET /api/login_check -> PUBLIC_ACCESS
+  - GET /api/users -> PUBLIC_ACCESS
+  - POST /api/users -> PUBLIC_ACCESS
+  - GET /api/users/:id -> PUBLIC_ACCESS
+  - GET /api/tweets -> PUBLIC_ACCESS
+  - GET /api/tweets/:id -> PUBLIC_ACCESS
+  - Reste de /api -> ROLE_USER requis
+
+⚠ ATTENTION: Update et Delete sur utilisateurs ne sont pas restreints
+   PUT/DELETE /api/users/:id acceptent n'importe quel utilisateur authentifié
+
+3.2 DOCTRINE ORM
+✓ Configuration correcte pour PostgreSQL
+✓ Auto-mapping activé
+✓ Migrations en place
+✓ Lazy loading ghostObjects activé
+✓ Naming strategy underscore_number_aware
+
+Problèmes observés:
+  ⚠ Table User utilise backticks: `User` (non-standard)
+  ⚠ Table Like utilise backticks: `like` (non-standard)
+  ✓ Autres tables correctement nommées
+
+3.3 JWT (lexik_jwt_authentication.yaml)
+✓ Clés privée/publique configurées
+✓ TTL: 3600 secondes (1 heure)
+✓ Passphrase configurée
+
+3.4 CORS
+✓ Implémenté via CorsSubscriber
+✓ Headers corrects:
+  - Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH
+  - Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With
+  - Access-Control-Allow-Credentials: true
+  - Access-Control-Max-Age: 3600
+
+Configuration: Accepte tous les origines (*)
+
+4. ENTITES
+================================================================================
+
+4.1 USER
+Champs:
+  ✓ id (PK)
+  ✓ username (unique)
+  ✓ email (unique)
+  ✓ password_hash
+  ✓ roles (JSON)
+  ✓ bio (nullable)
+  ✓ avatar_url (nullable)
+  ✓ banner_url (nullable)
+  ✓ location (nullable)
+  ✓ website_url (nullable)
+
+Interfaces: UserInterface, PasswordAuthenticatedUserInterface
+
+⚠ PROBLEMES:
+  ⚠ Pas de relations Doctrine avec Tweet, Like, Media
+  ⚠ Les autres entités utilisent user_id au lieu de relations
+  ⚠ Pas de cascade delete
+  ⚠ Pas de contrainte de clé étrangère en base
+
+4.2 TWEET
+Champs:
+  ✓ id (PK)
+  ✓ user_id (FK manuelle)
+  ⚠ content (280 caractères - limité)
+  ✓ created_at (immutable)
+
+⚠ PROBLEMES:
+  ⚠ Pas de relation ManyToOne vers User
+  ⚠ Pas de support pour les retweets
+  ⚠ Pas de support pour les mentions (@)
+  ⚠ Pas de support pour les hashtags directs (relation)
+
+4.3 LIKE
+Champs:
+  ✓ id (PK)
+  ⚠ created_at (immutable)
+
+⚠ PROBLEMES CRITIQUES:
+  ⚠ INCOMPLET: Manque user_id
+  ⚠ INCOMPLET: Manque tweet_id
+  ⚠ Entité inutilisable en l'état
+  ⚠ Aucun Repository mapping
+
+4.4 MEDIA
+Champs:
+  ✓ id (PK)
+  ✓ tweet_id (FK manuelle)
+  ✓ file_url (500 caractères)
+  ✓ media_type (10 caractères)
+
+⚠ PROBLEMES:
+  ⚠ Pas de relation ManyToOne vers Tweet
+  ⚠ media_type limité à 10 caractères (strict)
+
+4.5 HASHTAG
+Champs:
+  ✓ id (PK)
+  ⚠ name
+  ⚠ created_at
+
+⚠ PROBLEMES:
+  ⚠ Pas de relation ManyToMany avec Tweet
+  ⚠ Pas d'indexation
+
+5. CONTROLLEURS
+================================================================================
+
+5.1 AuthController
+✓ Route: POST /api/login_check
+✓ Gère l'authentification JWT
+✓ Minimalist et correct
+
+5.2 UserController
+Implémentation CRUD complète:
+✓ GET /api/users - Liste avec filtre par email
+✓ GET /api/users/:id - Détail utilisateur
+✓ POST /api/users - Création avec validation
+✓ PUT /api/users/:id - Mise à jour
+✓ DELETE /api/users/:id - Suppression
+
+Validations:
+✓ Email valide (FILTER_VALIDATE_EMAIL)
+✓ Password >= 8 caractères
+✓ Contrôles des doublons (email, username)
+✓ Gestion des rôles (empêche escalade de privilèges en POST)
+✓ Type checking strict
+
+Sérialisation:
+✓ Utilise méthode toArray() pour exclure le password
+✓ Pas d'exposure du hash password
+
+⚠ PROBLEMES:
+  ⚠ PUT/DELETE: Pas de vérification d'authorization
+     - N'importe quel utilisateur peut modifier/supprimer un autre utilisateur
+  ⚠ Pas de validation d'unicité en UPDATE pour email/username
+  ⚠ Pas de vérification du format email en UPDATE
+  ⚠ Pas de validation de longueur de mot de passe en UPDATE
+
+5.3 TweetController
+Implémentation CRUD:
+✓ GET /api/tweets - Liste
+✓ GET /api/tweets/:id - Détail
+✓ POST /api/tweets - Création
+✓ PUT /api/tweets/:id - Mise à jour
+✓ DELETE /api/tweets/:id - Suppression
+
+Validations:
+✓ user_id requis (int)
+✓ content requis et non-vide
+✓ Trim du contenu
+
+⚠ PROBLEMES:
+  ⚠ POST: Pas de vérification que l'utilisateur existe
+  ⚠ POST: Pas de vérification que l'user_id appartient à l'utilisateur connecté
+  ⚠ POST: Accepte n'importe quel user_id (sécurité)
+  ⚠ Pas de limite de caractères vérifiée (280 max)
+  ⚠ Pas de vérification d'autorité (qui peut modifier/supprimer)
+  ⚠ Sérialisation: Manque les relations (user, likes, media)
+
+5.4 LikeController
+Implémentation CRUD:
+✓ GET /api/likes - Liste
+✓ GET /api/likes/:id - Détail
+✓ POST /api/likes - Création
+✓ PUT /api/likes/:id - Mise à jour
+✓ DELETE /api/likes/:id - Suppression
+
+⚠ PROBLEMES CRITIQUES:
+  ⚠ Entité Like incomplète (pas de user_id ni tweet_id)
+  ⚠ Controller inutilisable
+  ⚠ Pas de contrainte d'unicité user+tweet
+
+5.5 MediaController
+✓ Implémentation CRUD basique
+
+⚠ PROBLEMES:
+  ⚠ Pas de vérification que le tweet existe
+  ⚠ Pas de vérification que le fichier existe réellement
+  ⚠ Pas de upload de fichier (accepte juste une URL)
+
+5.6 HashtagController
+⚠ Implémentation non examinée (entité incomplète)
+
+5.7 CorsPreflightController
+✓ Gère les requêtes OPTIONS
+✓ Retourne réponse vide avec headers CORS
+
+6. ISSUES DE SECURITE
+================================================================================
+
+CRITIQUES (niveau 1):
+❌ Authorization insuffisante
+   - PUT/DELETE /api/users/:id: N'importe quel ROLE_USER peut modifier/supprimer
+   - PUT/DELETE /api/tweets/:id: N'importe quel ROLE_USER peut modifier/supprimer
+   
+❌ Injection de données
+   - POST /api/tweets: user_id accepté du client (pas de vérification)
+   - POST /api/likes: Pas de vérification de la source
+   - PUT /api/users/:id: Rôles modifiables par l'utilisateur
+
+MAJEURS (niveau 2):
+⚠ Entité Like incomplète
+⚠ Pas de validation en CASCADE
+  - Suppression d'un user ne supprime pas ses tweets
+  - Suppression d'un tweet ne supprime pas ses likes/media
+⚠ Pas de rate limiting
+⚠ Pas de validation de longueur en UPDATE
+⚠ Pas de contrôle du format email en UPDATE
+
+MINEURS (niveau 3):
+⚠ Pas de logging des actions sensibles
+⚠ Pas de soft delete (suppression logique)
+⚠ Pas de versioning d'API
+⚠ Manque de documentation des endpoints
+
+7. BASES DE DONNEES
+================================================================================
+
+Migrations:
+✓ 3 migrations présentes
+  - Version20250317135448.php
+  - Version20250317143000.php
+  - Version20250317202130.php
+
+⚠ Pas examinées (fichiers non consultés)
+
+8. PATTERNS & BONNES PRATIQUES
+================================================================================
+
+Appliqués:
+✓ Dependency Injection (Symfony)
+✓ Repository Pattern (Doctrine)
+✓ Entity Pattern (ORM)
+✓ API RESTful pour la plupart
+✓ JSON Response
+✓ Type Hinting (PHP 8.2+)
+✓ Static return types (PHP 8.1+)
+✓ Attributes pour les annotations (PHP 8+)
+
+À améliorer:
+⚠ Pas de DTO (Data Transfer Object)
+⚠ Pas de Service Layer
+⚠ Pas de Validators (Symfony Validator)
+⚠ Validation manuelle dans les contrôleurs
+⚠ Pas de formulaires (Symfony Forms)
+⚠ Pas de Event Listeners pour l'audit
+⚠ Pas de Middleware/Chain of Responsibility
+
+9. TESTS
+================================================================================
+
+⚠ Pas de tests détectés
+  - Pas de dossier tests/
+  - Pas de test files
+  
+Recommandé:
+  - Tests unitaires des validations
+  - Tests d'intégration des endpoints
+  - Tests de sécurité (authorization)
+  - Tests de migrations
+
+10. DOCUMENTATION
+================================================================================
+
+⚠ Manquante:
+  - Pas de README
+  - Pas de documentation API
+  - Pas de guide d'installation
+  - Pas de .env.example
+
+11. CONFIGURATION DEVOPS
+================================================================================
+
+✓ .env probablement configuré (non consulté)
+✓ JWT Keys en place (config/jwt/)
+✓ Doctrine migrations prêtes
+
+⚠ Manquant:
+  - Pas de Docker configuration
+  - Pas de .env.example visible
+  - Pas de configuration de déploiement
+  - Pas de CI/CD visible
+
+12. PERFORMANCE
+================================================================================
+
+⚠ Problèmes identifiés:
+  - Pas d'indexation sur les relations (user_id)
+  - Pas de pagination sur les listes (findAll())
+  - Pas de eager loading des relations
+  - Pas de cache de requêtes
+
+13. CONVENTIONS DE NOMMAGE
+================================================================================
+
+⚠ Incohérences:
+  - Camelcase pour les propriétés PHP ✓
+  - snake_case pour les colonnes BD ✓
+  - Mais utilisation manuelle de user_id au lieu de relations
+  - Table User avec backticks (non-standard)
+  - Table Like avec backticks (non-standard)
+
+================================================================================
+RESUMÉ DES RECOMMENDATIONS
+================================================================================
+
+URGENT (faire tout de suite):
+1. Corriger l'entité Like (ajouter user_id et tweet_id)
+2. Implémenter la vérification d'autorisation (PUT/DELETE)
+3. Ajouter les validations manquantes en UPDATE
+4. Vérifier que user_id en POST provient de l'utilisateur connecté
+
+IMPORTANT (faire avant production):
+1. Ajouter des relations Doctrine (OneToMany, ManyToOne, ManyToMany)
+2. Implémenter un Service Layer
+3. Ajouter des tests (unitaires et intégration)
+4. Mettre en place la pagination
+5. Créer la documentation API
+
+NICE TO HAVE (améliorations futures):
+1. Ajouter des DTOs
+2. Implémenter un système de logging
+3. Ajouter du rate limiting
+4. Implémenter soft deletes
+5. Ajouter de la mise en cache
+6. Dockeriser l'application
+
+================================================================================
+SCORE GLOBAL
+================================================================================
+
+Architecture: 7/10
+Sécurité: 5/10
+Validation: 6/10
+Tests: 0/10
+Documentation: 2/10
+Performance: 5/10
+
+MOYENNE: 4.2/10
+
+La base est présente mais il y a des problèmes critiques de sécurité
+et des manques importants pour une application de production.

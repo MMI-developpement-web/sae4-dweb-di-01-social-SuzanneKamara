@@ -1,6 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils.ts";
-import type { ReactNode } from "react";
 import { useState } from "react";
 
 const inputVariants = cva("border border-gray-300 ", {
@@ -22,7 +21,7 @@ interface InputDataProps {
  type?:string;
 }
 interface InputViewProps extends VariantProps<typeof inputVariants> {
-//   className?: string;
+  className?: string;
 }
 interface InputProps extends InputDataProps, InputViewProps {}
 
@@ -36,7 +35,7 @@ function isValidEmail(email: string) {
 } 
 
 
-export default function Input({ type, placeholder, variant }: InputProps) {
+export default function Input({ type, placeholder, variant, className }: InputProps) {
     const [errorMessage, setErrorMessage] = useState<string>("");
     const [currentVariant, setCurrentVariant] = useState<"default" | "active" | "error" | null | undefined>(variant);
 
@@ -56,7 +55,7 @@ export default function Input({ type, placeholder, variant }: InputProps) {
         <input 
           type={type} 
           placeholder={placeholder} 
-          className={cn(inputVariants({ variant: currentVariant }))} 
+          className={cn(inputVariants({ variant: currentVariant }), className)} 
           onChange={type === "email" ? handleEmailChange : undefined}
         />
         {errorMessage && (

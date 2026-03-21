@@ -1,9 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap');
 @import "tailwindcss";
 :root {
-  /* --color-primary: #1d9bf0;
-  --color-primary-hover: #1a8cd8;
-  --color-background: #ffffff;
-  --color-surface: #f5f5f5;
-  --color-text: #0f172a;
-  --color-border: #e5e7eb; */
+  --ui-bg-start: #b5ccdd;
+  --ui-bg-end: #b1c4d4;
+  --ui-surface: #ececec;
+  --ui-ink: #111111;
+  --ui-muted: #7a7a7a;
+  --ui-accent: #ea4098;
+  --ui-warm: #de6e2d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--ui-ink);
+}
+
+.editorial-bg {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 38%),
+    radial-gradient(circle at 92% 84%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(180deg, var(--ui-bg-start) 0%, var(--ui-bg-end) 100%);
+}
+
+.ui-kicker {
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.ui-title {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.ui-surface {
+  background: var(--ui-surface);
+  border: 2px solid rgba(17, 17, 17, 0.15);
 }
