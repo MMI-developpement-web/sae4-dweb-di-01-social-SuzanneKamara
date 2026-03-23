@@ -2,8 +2,6 @@ import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 
-const BACKEND_ADMIN_URL = 'http://127.0.0.1:8080/admin'
-
 type HeaderConfig = {
   kicker: string
   title: string
@@ -40,10 +38,6 @@ export default function AppHeader() {
 
   const { kicker, title } = getHeaderConfig(location.pathname)
 
-  const onAdmin = useCallback(() => {
-    window.location.href = BACKEND_ADMIN_URL
-  }, [])
-
   const onLogout = useCallback(() => {
     logout()
     navigate('/login', { replace: true })
@@ -57,13 +51,6 @@ export default function AppHeader() {
           <p className='ui-title mt-1 text-[32px] leading-[26px] text-black'>{title}</p>
         </div>
         <div className='flex items-center gap-[10px]'>
-          <button
-            type='button'
-            onClick={onAdmin}
-            className='ui-kicker cursor-pointer text-[11px] text-[#EA4098] underline underline-offset-2 hover:opacity-80'
-          >
-            Admin
-          </button>
           <button
             type='button'
             onClick={onLogout}
