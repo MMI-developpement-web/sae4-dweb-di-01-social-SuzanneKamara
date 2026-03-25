@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../../lib/utils.ts';
 import { useAuth } from '../../auth/useAuth';
 import { apiFetchPublic } from '../../lib/api';
@@ -297,10 +297,6 @@ export default function Register({ data, onClose, variant, backgroundColor }: Re
     return defaultData;
   }, [data, uiState]);
 
-  if (isAuthenticated) {
-    return <Navigate to={redirectTo} replace />;
-  }
-
   const resetToVerify = () => {
     setUiState('verify');
     setPassword('');
@@ -320,6 +316,12 @@ export default function Register({ data, onClose, variant, backgroundColor }: Re
 
     navigate('/', { replace: true });
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAuthenticated, navigate, redirectTo]);
 
   useEffect(() => {
     const verifiedFlag = searchParams.get('verified');

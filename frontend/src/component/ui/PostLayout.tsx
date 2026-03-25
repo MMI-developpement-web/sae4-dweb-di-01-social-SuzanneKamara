@@ -18,7 +18,6 @@ interface PostLayoutDataProps {
 	hashtags?: string;
 	content?: string;
 	title?: string;
-	// adminLabel?: string;
 	logoutLabel?: string;
 }
 
@@ -34,7 +33,6 @@ export default function PostLayout({
 	content =
 		'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas volutpat tellus felis, et porttitor odio sollicitudin et. Proin lacinia nisl et sem posuere, vel faucibus arcu dictum.',
 	title = 'Post',
-	// adminLabel = 'Admin',
 	logoutLabel = 'Logout',
 	variant,
 	className,
@@ -45,9 +43,7 @@ export default function PostLayout({
 
 			<div className='rounded-sm bg-[linear-gradient(160deg,#b4cfe0_0%,#d0e0ea_100%)] p-4'>
 				<div className='mb-3 flex items-center justify-end gap-2'>
-					{/* <button type='button' className='text-xs text-pink-600 underline'>
-						{adminLabel}
-					</button> */}
+
 					<button
 						type='button'
 						className='rounded-md bg-pink-500 px-3 py-1 text-xs font-semibold text-white hover:bg-pink-600'

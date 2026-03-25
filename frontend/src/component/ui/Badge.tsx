@@ -12,7 +12,7 @@ interface BadgeViewProps {
 }
 
 // Avant - à refactorer
-export default function Badge({ type, size, children, className }: BadgeDataProps & BadgeViewProps) {
+export default function Badge({ type, size, children }: BadgeDataProps & BadgeViewProps) {
  
   return (
     <span
