@@ -70,9 +70,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $password_reset_expires_at = null;
 
+    /**
+     * @var Collection<int, Like>
+     */
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'user')]
+    private Collection $liked;
+
+    #[ORM\Column]
+    private ?bool $isBlocked = null;
+
     public function __construct()
     {
         $this->tweet_id = new ArrayCollection();
+        $this->liked = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -313,6 +323,48 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPasswordResetExpiresAt(?\DateTimeImmutable $password_reset_expires_at): static
     {
         $this->password_reset_expires_at = $password_reset_expires_at;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Like>
+     */
+    public function getLiked(): Collection
+    {
+        return $this->liked;
+    }
+
+    public function addLiked(Like $liked): static
+    {
+        if (!$this->liked->contains($liked)) {
+            $this->liked->add($liked);
+            $liked->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLiked(Like $liked): static
+    {
+        if ($this->liked->removeElement($liked)) {
+            // set the owning side to null (unless already changed)
+            if ($liked->getUser() === $this) {
+                $liked->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function isBlocked(): ?bool
+    {
+        return $this->isBlocked;
+    }
+
+    public function setIsBlocked(bool $isBlocked): static
+    {
+        $this->isBlocked = $isBlocked;
 
         return $this;
     }

@@ -24,5 +24,6 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "php.validate.executablePath": "/usr/local/bin/php"
+  "php.validate.executablePath": "/usr/local/bin/php",
+  "intelephense.environment.includePaths": ["backend/vendor"]
 }

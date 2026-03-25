@@ -6,6 +6,7 @@ use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
@@ -28,6 +29,7 @@ class UserCrudController extends AbstractCrudController
             TextField::new('banner_url')->hideOnIndex(),
             TextField::new('location')->hideOnIndex(),
             TextField::new('website_url')->hideOnIndex(),
+            BooleanField::new('is_blocked', 'Utilisateur bloqué'),
         ];
     }
 }

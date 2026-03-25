@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\TweetRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TweetRepository::class)]
@@ -25,6 +27,18 @@ class Tweet
     #[ORM\ManyToOne(inversedBy: 'tweet_id')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id')]
     private ?User $user = null;
+
+    /**
+     * @var Collection<int, Like>
+     */
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'tweet')]
+    private Collection $Liked;
+
+    public function __construct()
+    {
+        $this->Liked = new ArrayCollection();
+    }
+
 
     public function getId(): ?int
     {
@@ -75,6 +89,36 @@ class Tweet
     public function setUser(?User $user): static
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Like>
+     */
+    public function getLiked(): Collection
+    {
+        return $this->Liked;
+    }
+
+    public function addLiked(Like $liked): static
+    {
+        if (!$this->Liked->contains($liked)) {
+            $this->Liked->add($liked);
+            $liked->setTweet($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLiked(Like $liked): static
+    {
+        if ($this->Liked->removeElement($liked)) {
+            // set the owning side to null (unless already changed)
+            if ($liked->getTweet() === $this) {
+                $liked->setTweet(null);
+            }
+        }
 
         return $this;
     }

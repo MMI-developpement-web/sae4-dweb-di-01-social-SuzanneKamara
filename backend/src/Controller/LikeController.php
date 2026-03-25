@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Entity\Like;
 use App\Repository\LikeRepository;
+use App\Repository\TweetRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,7 +19,7 @@ class LikeController extends AbstractController
     public function index(LikeRepository $likeRepository): JsonResponse
     {
         $likes = array_map(
-            fn (Like $like): array => $this->toArray($like),
+            fn(Like $like): array => $this->toArray($like),
             $likeRepository->findAll()
         );
 
@@ -35,43 +37,36 @@ class LikeController extends AbstractController
     }
 
     #[Route('', name: 'api_like_create', methods: ['POST'])]
-    public function create(EntityManagerInterface $entityManager): JsonResponse
-    {
-        $like = (new Like())->setCreatedAt(new \DateTimeImmutable());
+    public function create(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        UserRepository $userRepository,
+        TweetRepository $tweetRepository
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+
+        // Validation des données entrantes
+        if (!isset($data['user_id']) || !isset($data['tweet_id'])) {
+            return $this->json(['error' => 'user_id et tweet_id sont requis'], 400);
+        }
+
+        $user = $userRepository->find($data['user_id']);
+        $tweet = $tweetRepository->find($data['tweet_id']);
+
+        if (!$user || !$tweet) {
+            return $this->json(['error' => 'Utilisateur ou Tweet introuvable'], 404);
+        }
+
+        // Création du Like
+        $like = new Like();
+        $like->setUser($user);
+        $like->setTweet($tweet);
+        $like->setCreatedAt(new \DateTimeImmutable());
 
         $entityManager->persist($like);
         $entityManager->flush();
 
         return $this->json($this->toArray($like), 201);
-    }
-
-    #[Route('/{id}', name: 'api_like_update', methods: ['PUT'])]
-    public function update(?Like $like, Request $request, EntityManagerInterface $entityManager): JsonResponse
-    {
-        if (!$like) {
-            return $this->json(['error' => 'Like introuvable'], 404);
-        }
-
-        $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
-            return $this->json(['error' => 'JSON invalide'], 400);
-        }
-
-        if (array_key_exists('created_at', $data)) {
-            if (!is_string($data['created_at']) || trim($data['created_at']) === '') {
-                return $this->json(['error' => 'Le champ created_at doit etre une date ISO8601'], 400);
-            }
-
-            try {
-                $like->setCreatedAt(new \DateTimeImmutable($data['created_at']));
-            } catch (\Exception) {
-                return $this->json(['error' => 'Le champ created_at est invalide'], 400);
-            }
-        }
-
-        $entityManager->flush();
-
-        return $this->json($this->toArray($like));
     }
 
     #[Route('/{id}', name: 'api_like_delete', methods: ['DELETE'])]
@@ -87,11 +82,22 @@ class LikeController extends AbstractController
         return $this->json(null, 204);
     }
 
+    /**
+     * Transforme l'entité en tableau pour le JSON
+     */
     private function toArray(Like $like): array
     {
         return [
             'id' => $like->getId(),
             'created_at' => $like->getCreatedAt()?->format(DATE_ATOM),
+            'user' => [
+                'id' => $like->getUser()?->getId(),
+                'username' => $like->getUser()?->getUsername(),
+            ],
+            'tweet' => [
+                'id' => $like->getTweet()?->getId(),
+                'content' => $like->getTweet()?->getContent(),
+            ],
         ];
     }
 }
