@@ -12,6 +12,7 @@ import Tweets from './routes/tweets.jsx'
 import Users, { loader as usersLoader } from './routes/users.jsx'
 import Hashtags, { loader as hashtagsLoader } from './routes/hashtags.jsx'
 import Settings from './routes/settings.tsx'
+import Profile from './routes/profile.tsx'
 import './index.css'
 
 const router = createBrowserRouter([
@@ -62,6 +63,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'profile',
+        element: (
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         ),
       },

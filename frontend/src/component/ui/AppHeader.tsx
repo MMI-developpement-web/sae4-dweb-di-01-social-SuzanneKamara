@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FiSettings, FiLogOut } from 'react-icons/fi'
+import { FiSettings, FiLogOut, FiUser } from 'react-icons/fi'
 import { useAuth } from '../../auth/useAuth'
 
 type HeaderConfig = {
@@ -29,6 +29,10 @@ function getHeaderConfig(pathname: string): HeaderConfig {
     return { kicker: 'Profil', title: 'Paramètres' }
   }
 
+  if (pathname.startsWith('/profile')) {
+    return { kicker: 'Profil', title: 'Profil' }
+  }
+
   return { kicker: 'Edition', title: 'LnkUp' }
 }
 
@@ -48,6 +52,10 @@ export default function AppHeader() {
     navigate('/login', { replace: true })
   }, [logout, navigate])
 
+  const onNavigateToProfile = useCallback(() => {
+    navigate('/profile')
+  }, [navigate])
+
   const onNavigateToSettings = useCallback(() => {
     navigate('/settings')
   }, [navigate])
@@ -60,6 +68,14 @@ export default function AppHeader() {
           <p className='ui-title mt-1 text-[32px] leading-[26px] text-black'>{title}</p>
         </div>
         <div className='flex items-center gap-[10px]'>
+          <button
+            type='button'
+            onClick={onNavigateToProfile}
+            className='flex items-center justify-center h-[35px] w-[35px] rounded-[10px] border border-black/10 bg-white hover:bg-gray-50 transition-colors'
+            aria-label='Profil'
+          >
+            <FiUser size={18} />
+          </button>
           <button
             type='button'
             onClick={onNavigateToSettings}
