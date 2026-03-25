@@ -3,6 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { FiCompass, FiHeart, FiHome, FiMessageSquare, FiPlus, FiRepeat, FiX } from 'react-icons/fi';
 import { fetchExploreTweetsPage } from '../lib/tweetService';
 import { useAuth } from '../auth/useAuth';
+import { useRefreshPreferences } from '../context/RefreshPreferencesContext';
+import RefreshButton from '../component/ui/RefreshButton';
 
 const EXPLORE_PAGE_SIZE = 40;
 
@@ -100,6 +102,7 @@ export default function Tweets() {
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState(null);
   const [selectedTweet, setSelectedTweet] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const sentinelRef = useRef(null);
   const prefetchedPageRef = useRef(null);
@@ -111,6 +114,15 @@ export default function Tweets() {
   const { isAuthenticated } = useAuth();
   const isExploreActive = location.pathname.startsWith('/tweets');
   const isHomeActive = location.pathname.startsWith('/feed');
+
+  const shuffleArray = useCallback((array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, []);
 
   const appendUniqueTweets = useCallback((incoming) => {
     setTweets((previous) => {
@@ -162,15 +174,16 @@ export default function Tweets() {
 
     try {
       const page = await fetchExploreTweetsPage(EXPLORE_PAGE_SIZE, 0);
-      setTweets(page.tweets);
-      setOffset(page.tweets.length);
+      const shuffledTweets = shuffleArray(page.tweets);
+      setTweets(shuffledTweets);
+      setOffset(shuffledTweets.length);
       setHasMore(page.hasMore);
 
-      if (page.hasMore && page.tweets.length > 0) {
-        void prefetchPage(page.tweets.length);
+      if (page.hasMore && shuffledTweets.length > 0) {
+        void prefetchPage(shuffledTweets.length);
       }
 
-      if (page.tweets.length === 0) {
+      if (shuffledTweets.length === 0) {
         setError('Aucun post disponible pour le moment.');
       }
     } catch (err) {
@@ -179,7 +192,16 @@ export default function Tweets() {
     } finally {
       setIsLoading(false);
     }
-  }, [prefetchPage]);
+  }, [prefetchPage, shuffleArray]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await loadInitialTweets();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadInitialTweets]);
 
   const loadMoreTweets = useCallback(async () => {
     if (isFetchingMore || !hasMore || isLoading) {
@@ -268,6 +290,23 @@ export default function Tweets() {
     };
   }, [selectedTweet]);
 
+  // Auto-refresh effect
+  const { preferences } = useRefreshPreferences();
+  
+  useEffect(() => {
+    if (!preferences.autoRefreshEnabled || !isAuthenticated) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      void loadInitialTweets();
+    }, preferences.autoRefreshInterval * 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [preferences.autoRefreshEnabled, preferences.autoRefreshInterval, isAuthenticated, loadInitialTweets]);
+
   if (!isAuthenticated) {
     return <Navigate to='/login' state={{ from: { pathname: location.pathname } }} replace />;
   }
@@ -280,6 +319,10 @@ export default function Tweets() {
             <p className='text-sm text-red-800'>{error}</p>
           </div>
         )}
+
+        <div className='mb-4 flex justify-center m-2 sticky'>
+          <RefreshButton onClick={handleRefresh} isLoading={isRefreshing} />
+        </div>
 
         <div className='w-full' style={{ columnCount: 2, columnGap: '10px' }}>
           {isLoading ? (

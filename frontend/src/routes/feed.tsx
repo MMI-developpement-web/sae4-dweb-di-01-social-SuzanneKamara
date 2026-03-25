@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FiCompass, FiHeart, FiHome, FiMessageSquare, FiPlus, FiRepeat } from 'react-icons/fi'
 import TweetComposer from '../component/ui/TweetComposer'
+import RefreshButton from '../component/ui/RefreshButton'
+import { useAuth } from '../auth/useAuth'
+import { useRefreshPreferences } from '../context/RefreshPreferencesContext'
 import type { FollowingTweetsPage, Tweet } from '../lib/tweetService'
 import { fetchFollowingTweetsPage } from '../lib/tweetService'
 
@@ -142,12 +145,14 @@ export default function Feed() {
   const [offset, setOffset] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [showComposer, setShowComposer] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const prefetchedPageRef = useRef<FollowingTweetsPage | null>(null)
   const prefetchedOffsetRef = useRef<number | null>(null)
   const prefetchPromiseRef = useRef<Promise<void> | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
+  const { isAuthenticated } = useAuth()
 
   const activeRoute: 'feed' | 'explore' = location.pathname.startsWith('/tweets') ? 'explore' : 'feed'
   const shouldOpenComposerFromQuery = new URLSearchParams(location.search).get('compose') === '1'
@@ -293,6 +298,23 @@ export default function Feed() {
     setShowComposer(shouldOpenComposerFromQuery)
   }, [shouldOpenComposerFromQuery])
 
+  // Auto-refresh effect
+  const { preferences } = useRefreshPreferences()
+
+  useEffect(() => {
+    if (!preferences.autoRefreshEnabled || !isAuthenticated || showComposer) {
+      return
+    }
+
+    const intervalId = setInterval(() => {
+      void loadInitialTweets()
+    }, preferences.autoRefreshInterval * 1000)
+
+    return () => {
+      clearInterval(intervalId)
+    }
+  }, [preferences.autoRefreshEnabled, preferences.autoRefreshInterval, isAuthenticated, showComposer, loadInitialTweets])
+
   const openComposer = useCallback(() => {
     if (!shouldOpenComposerFromQuery) {
       navigate('/feed?compose=1')
@@ -303,6 +325,15 @@ export default function Feed() {
     navigate('/feed', { replace: true })
   }, [navigate])
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      await loadInitialTweets()
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [loadInitialTweets])
+
   const handleTweetCreated = () => {
     void loadInitialTweets()
   }
@@ -310,6 +341,12 @@ export default function Feed() {
   return (
     <div className='editorial-bg min-h-screen w-full overflow-hidden pb-[132px]'>
       <div className='mx-auto flex w-full max-w-[375px] flex-col items-center'>
+        {!showComposer && (
+          <div className='mb-4 w-[325px] flex justify-end'>
+            <RefreshButton onClick={handleRefresh} isLoading={isRefreshing} />
+          </div>
+        )}
+
         {showComposer && (
           <div className='mb-5 w-[325px]'>
             <TweetComposer

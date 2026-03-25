@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { FiSettings, FiLogOut } from 'react-icons/fi'
 import { useAuth } from '../../auth/useAuth'
 
 type HeaderConfig = {
@@ -24,6 +25,10 @@ function getHeaderConfig(pathname: string): HeaderConfig {
     return { kicker: 'Data', title: 'Hashtags' }
   }
 
+  if (pathname.startsWith('/settings')) {
+    return { kicker: 'Profil', title: 'Paramètres' }
+  }
+
   return { kicker: 'Edition', title: 'LnkUp' }
 }
 
@@ -43,6 +48,10 @@ export default function AppHeader() {
     navigate('/login', { replace: true })
   }, [logout, navigate])
 
+  const onNavigateToSettings = useCallback(() => {
+    navigate('/settings')
+  }, [navigate])
+
   return (
     <header className='sticky top-0 z-40 mx-auto w-full max-w-[375px]  backdrop-blur-sm'>
       <div className='mb-[14px] flex items-start justify-between gap-[10px] px-[25px] pt-[18px]'>
@@ -53,10 +62,19 @@ export default function AppHeader() {
         <div className='flex items-center gap-[10px]'>
           <button
             type='button'
-            onClick={onLogout}
-            className='ui-kicker h-[35px] cursor-pointer rounded-[10px] border border-black/10 bg-[#ea4098] px-[12px] text-[11px] text-white transition-colors hover:bg-[#d03588]'
+            onClick={onNavigateToSettings}
+            className='flex items-center justify-center h-[35px] w-[35px] rounded-[10px] border border-black/10 bg-white hover:bg-gray-50 transition-colors'
+            aria-label='Paramètres'
           >
-            Logout
+            <FiSettings size={18} />
+          </button>
+          <button
+            type='button'
+            onClick={onLogout}
+            className='ui-kicker h-[35px] cursor-pointer rounded-[10px] border border-black/10 bg-[#ea4098] px-[12px] text-[11px] text-white transition-colors hover:bg-[#d03588] flex items-center gap-2'
+          >
+            <FiLogOut size={14} />
+            <span>Logout</span>
           </button>
         </div>
       </div>
