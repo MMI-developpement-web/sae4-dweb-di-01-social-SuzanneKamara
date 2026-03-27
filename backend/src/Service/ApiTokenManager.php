@@ -24,7 +24,7 @@ class ApiTokenManager
 
         // Utiliser une requête SQL directe pour UPDATE ou INSERT
         $conn = $this->em->getConnection();
-        
+
         // Vérifier si un token existe déjà
         $existingToken = $conn->fetchOne(
             'SELECT token FROM api_token WHERE user_id = ? LIMIT 1',

@@ -93,20 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentToken = getSessionToken()
       const storedUserId = localStorage.getItem('userId')
 
-      console.log(
-        `[AuthContext] Sync check: token=${currentToken ? 'present' : 'missing'}, storedUserId=${storedUserId || 'missing'}`
-      )
-
       // If we have a token but no userId in localStorage, fetch it
       if (currentToken && !storedUserId) {
-        console.log('[AuthContext] Fetching userId from /api/users/me...')
         try {
           const userResponse = await apiFetchJson<{ id: number }>(buildApiUrl('/users/me'))
-          console.log(`[AuthContext] Got userId: ${userResponse.id}`)
           setUserId(userResponse.id)
           localStorage.setItem('userId', String(userResponse.id))
         } catch (err) {
-          console.error('[AuthContext] Failed to fetch current user:', err)
+          console.error('Failed to fetch current user:', err)
           setUserId(null)
           localStorage.removeItem('userId')
         }

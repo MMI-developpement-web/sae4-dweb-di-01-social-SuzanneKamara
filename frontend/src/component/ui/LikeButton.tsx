@@ -23,22 +23,17 @@ export default function LikeButton({
 
   // Load like status on mount
   useEffect(() => {
-    if (!currentUserId) {
-      console.warn(`[LikeButton] No currentUserId for tweet ${tweetId}`)
-      return
-    }
+    if (!currentUserId) return
 
     const loadLikeStatus = async () => {
       try {
-        console.log(`[LikeButton] Loading like status for user ${currentUserId}, tweet ${tweetId}`)
         const likes = await getLikesByUserAndTweet(currentUserId, tweetId)
-        console.log(`[LikeButton] Got likes:`, likes)
         if (likes.length > 0) {
           setIsLiked(true)
           setLikeId(likes[0].id)
         }
       } catch (err) {
-        console.error('[LikeButton] Failed to load like status:', err)
+        console.error('Failed to load like status:', err)
       }
     }
 
@@ -46,33 +41,26 @@ export default function LikeButton({
   }, [tweetId, currentUserId])
 
   const handleToggle = async () => {
-    if (!currentUserId || isLoading) {
-      console.warn(`[LikeButton] Cannot toggle: currentUserId=${currentUserId}, isLoading=${isLoading}`)
-      return
-    }
+    if (!currentUserId || isLoading) return
 
     try {
       setIsLoading(true)
 
       if (isLiked && likeId) {
         // Unlike
-        console.log(`[LikeButton] Unliking like ${likeId}`)
         await unlikeTweet(likeId)
         setIsLiked(false)
         setLikeCount((prev) => Math.max(0, prev - 1))
         setLikeId(null)
-        console.log(`[LikeButton] Unlike successful`)
       } else {
         // Like
-        console.log(`[LikeButton] Liking tweet ${tweetId}`)
         const result = await likeTweet(tweetId)
-        console.log(`[LikeButton] Like successful:`, result)
         setIsLiked(true)
         setLikeCount((prev) => prev + 1)
         setLikeId(result.id)
       }
     } catch (err) {
-      console.error('[LikeButton] Failed to toggle like:', err)
+      console.error('Failed to toggle like:', err)
     } finally {
       setIsLoading(false)
     }

@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Api;
 
 use App\Entity\FolowingFollower;
+use App\Entity\User;
 use App\Repository\FolowingFollowerRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -14,18 +15,40 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/follows')]
 class FollowController extends AbstractController
 {
-    #[Route('', name: 'api_follow_index', methods: ['GET'])]
-    public function index(FolowingFollowerRepository $repo): JsonResponse
+    #[Route('', name: 'follow_index', methods: ['GET'])]
+    public function index(Request $request, FolowingFollowerRepository $repo): JsonResponse
     {
-        $follows = array_map(
+        $followerId = $request->query->get('follower_id');
+        $followingId = $request->query->get('following_id');
+
+        $query = [];
+        if ($followerId) {
+            $query['follower'] = (int)$followerId;
+        }
+        if ($followingId) {
+            $query['following'] = (int)$followingId;
+        }
+
+        if (empty($query)) {
+            // Return all follows with pagination
+            $follows = $repo->findAll();
+        } else {
+            // Return filtered follows
+            $follows = $repo->findBy($query);
+        }
+
+        $data = array_map(
             fn(FolowingFollower $f): array => $this->toArray($f),
-            $repo->findAll()
+            $follows
         );
 
-        return $this->json($follows);
+        return $this->json([
+            'data' => $data,
+            'count' => count($data),
+        ]);
     }
 
-    #[Route('/{id}', name: 'api_follow_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'follow_show', methods: ['GET'])]
     public function show(?FolowingFollower $follow): JsonResponse
     {
         if (!$follow) {
@@ -35,36 +58,38 @@ class FollowController extends AbstractController
         return $this->json($this->toArray($follow));
     }
 
-    #[Route('', name: 'api_follow_create', methods: ['POST'])]
+    #[Route('', name: 'follow_create', methods: ['POST'])]
     public function create(
         Request $request,
         EntityManagerInterface $em,
         UserRepository $userRepository,
         FolowingFollowerRepository $followRepo
     ): JsonResponse {
-        $data = json_decode($request->getContent(), true);
-
-        $followerId = $data['follower_id'] ?? null;   // Celui qui s'abonne
-        $followingId = $data['following_id'] ?? null; // Celui qui est suivi
-
-        if (!$followerId || !$followingId) {
-            return $this->json(['error' => 'follower_id et following_id requis'], 400);
+        $currentUser = $this->getUser();
+        if (!$currentUser instanceof User) {
+            return $this->json(['error' => 'Authentification requise'], 401);
         }
 
-        if ($followerId === $followingId) {
+        $data = json_decode($request->getContent(), true);
+        $followingId = $data['following_id'] ?? null;
+
+        if (!$followingId) {
+            return $this->json(['error' => 'following_id requis'], 400);
+        }
+
+        if ($currentUser->getId() === $followingId) {
             return $this->json(['error' => 'On ne peut pas s\'abonner à soi-même'], 400);
         }
 
-        $follower = $userRepository->find($followerId);
         $following = $userRepository->find($followingId);
 
-        if (!$follower || !$following) {
-            return $this->json(['error' => 'Un des utilisateurs est introuvable'], 404);
+        if (!$following) {
+            return $this->json(['error' => 'Utilisateur à suivre introuvable'], 404);
         }
 
-        // Vérifier si l'abonnement existe déjà
+        // Check if already following
         $existing = $followRepo->findOneBy([
-            'follower' => $follower,
+            'follower' => $currentUser,
             'following' => $following
         ]);
 
@@ -73,7 +98,7 @@ class FollowController extends AbstractController
         }
 
         $follow = new FolowingFollower();
-        $follow->setFollower($follower);
+        $follow->setFollower($currentUser);
         $follow->setFollowing($following);
         $follow->setCreatedAt(new \DateTimeImmutable());
 
@@ -83,7 +108,7 @@ class FollowController extends AbstractController
         return $this->json($this->toArray($follow), 201);
     }
 
-    #[Route('/{id}', name: 'api_follow_delete', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'follow_delete', methods: ['DELETE'])]
     public function delete(?FolowingFollower $follow, EntityManagerInterface $em): JsonResponse
     {
         if (!$follow) {

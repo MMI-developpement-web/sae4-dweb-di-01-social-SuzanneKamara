@@ -6,6 +6,7 @@ import { useAuth } from '../auth/useAuth';
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext';
 import RefreshButton from '../component/ui/RefreshButton';
 import LikeButton from '../component/ui/LikeButton';
+import FollowButton from '../component/ui/FollowButton';
 
 const EXPLORE_PAGE_SIZE = 40;
 
@@ -62,7 +63,10 @@ function LargeTweetOverlay({ tweet, onClose }) {
               <div className='relative'>
                 <div className='size-[51px] rounded-full bg-[#D3D3D3]' />
                 <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
-                  <FiPlus className='size-[14px]' aria-hidden='true' />
+                  <FollowButton 
+                    targetUserId={tweet.author?.id} 
+                    className='text-white hover:text-blue-300'
+                  />
                 </div>
               </div>
             </div>

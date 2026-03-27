@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { cn } from '../../lib/utils.ts'
 import Button from './Button.tsx'
 import LikeButton from './LikeButton.tsx'
+import FollowButton from './FollowButton.tsx'
 import type { Tweet } from '../../lib/tweetService'
 import { deleteTweet, updateTweet } from '../../lib/tweetService'
 
@@ -138,7 +139,7 @@ export default function TweetCard({
           <p className='text-xs text-gray-500'>{createdAt}</p>
         </div>
 
-        {isOwnTweet && (
+        {isOwnTweet ? (
           <div className='flex gap-2'>
             <button
               type='button'
@@ -157,6 +158,8 @@ export default function TweetCard({
               Delete
             </button>
           </div>
+        ) : (
+          tweet.author?.id && <FollowButton targetUserId={tweet.author.id} showLabel={false} />
         )}
       </div>
 
