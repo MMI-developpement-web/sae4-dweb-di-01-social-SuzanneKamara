@@ -41,22 +41,22 @@ class UserController extends AbstractController
         return $this->json($users);
     }
 
-    #[Route('/{id}', name: 'api_user_show', methods: ['GET'])]
-    public function show(?User $user): JsonResponse
-    {
-        if (!$user) {
-            return $this->json(['error' => 'Utilisateur introuvable'], 404);
-        }
-
-        return $this->json($this->toArray($user));
-    }
-
     #[Route('/me', name: 'api_user_me', methods: ['GET'])]
     public function me(): JsonResponse
     {
         $user = $this->getUser();
         if (!$user instanceof \App\Entity\User) {
             return $this->json(['error' => 'Authentification requise'], 401);
+        }
+
+        return $this->json($this->toArray($user));
+    }
+
+    #[Route('/{id}', name: 'api_user_show', methods: ['GET'])]
+    public function show(?User $user): JsonResponse
+    {
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur introuvable'], 404);
         }
 
         return $this->json($this->toArray($user));

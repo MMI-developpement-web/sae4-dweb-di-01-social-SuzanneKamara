@@ -20,8 +20,6 @@ class ApiTokenManager
         // Hacher le token
         $hashedToken = hash('sha256', $rawToken);
 
-        error_log("🔐 TOKEN MANAGER - Génération pour user ID: {$user->getId()}, Token brut commence par: " . substr($rawToken, 0, 8));
-
         $userId = $user->getId();
 
         // Utiliser une requête SQL directe pour UPDATE ou INSERT
@@ -36,7 +34,6 @@ class ApiTokenManager
 
         if ($existingToken) {
             // UPDATE - Garder le user_id unique
-            error_log("🔐 TOKEN MANAGER - UPDATE du token existant (old hash begin: " . substr($existingToken, 0, 8) . ")");
             $conn->executeStatement(
                 'UPDATE api_token SET token = ?, created_at = NOW() WHERE user_id = ?',
                 [$hashedToken, $userId],
@@ -44,15 +41,12 @@ class ApiTokenManager
             );
         } else {
             // INSERT
-            error_log("🔐 TOKEN MANAGER - INSERT d'un nouveau token");
             $conn->executeStatement(
                 'INSERT INTO api_token (user_id, token, created_at) VALUES (?, ?, NOW())',
                 [$userId, $hashedToken],
                 ['integer', 'string']
             );
         }
-
-        error_log("🔐 TOKEN MANAGER - Token persisté en BDD (new hash begin: " . substr($hashedToken, 0, 8) . ")");
 
         // Retourner le token brut au front
         return $rawToken;

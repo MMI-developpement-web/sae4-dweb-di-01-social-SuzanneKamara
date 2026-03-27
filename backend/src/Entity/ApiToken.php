@@ -16,7 +16,7 @@ class ApiToken
     #[ORM\Column(length: 64, unique: true)]
     private ?string $token = null;
 
-    #[ORM\OneToOne(inversedBy: 'apiToken', cascade: ['persist'])]
+    #[ORM\OneToOne(inversedBy: 'apiToken', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, useEffect, type ReactNode } from 'react'
 import { AuthContext, type LoginPayload } from './AuthContextValue'
 import { clearCookie, getSessionToken, setSessionCookie, TOKEN_COOKIE_KEY } from '../lib/sessionCookie'
 import { buildApiUrl } from '../lib/apiConfig'
@@ -28,7 +28,10 @@ function extractErrorMessage(payload: unknown): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getSessionToken())
-  const [userId, setUserId] = useState<number | null>(null)
+  const [userId, setUserId] = useState<number | null>(() => {
+    const stored = localStorage.getItem('userId')
+    return stored ? parseInt(stored, 10) : null
+  })
 
   const login = async ({ identifier, password }: LoginPayload) => {
     const response = await fetch(LOGIN_API_URL, {
@@ -69,9 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userResponse = await apiFetchJson<{ id: number }>(buildApiUrl('/users/me'))
       setUserId(userResponse.id)
+      localStorage.setItem('userId', String(userResponse.id))
     } catch (err) {
       console.error('Failed to fetch current user:', err)
       setUserId(null)
+      localStorage.removeItem('userId')
     }
   }
 
@@ -79,7 +84,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearCookie(TOKEN_COOKIE_KEY)
     setToken(null)
     setUserId(null)
+    localStorage.removeItem('userId')
   }
+
+  // Sync userId from API if we have a token but no userId
+  useEffect(() => {
+    const syncUserId = async () => {
+      const currentToken = getSessionToken()
+      const storedUserId = localStorage.getItem('userId')
+
+      console.log(
+        `[AuthContext] Sync check: token=${currentToken ? 'present' : 'missing'}, storedUserId=${storedUserId || 'missing'}`
+      )
+
+      // If we have a token but no userId in localStorage, fetch it
+      if (currentToken && !storedUserId) {
+        console.log('[AuthContext] Fetching userId from /api/users/me...')
+        try {
+          const userResponse = await apiFetchJson<{ id: number }>(buildApiUrl('/users/me'))
+          console.log(`[AuthContext] Got userId: ${userResponse.id}`)
+          setUserId(userResponse.id)
+          localStorage.setItem('userId', String(userResponse.id))
+        } catch (err) {
+          console.error('[AuthContext] Failed to fetch current user:', err)
+          setUserId(null)
+          localStorage.removeItem('userId')
+        }
+      }
+    }
+
+    syncUserId()
+  }, [])
 
   const cookieToken = getSessionToken()
   const isAuthenticated = Boolean(token) && token === cookieToken

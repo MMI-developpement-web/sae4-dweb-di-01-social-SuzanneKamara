@@ -8,6 +8,7 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import Root from './routes/root.tsx'
 import LoginRoute from './routes/login.jsx'
 import Feed from './routes/feed.tsx'
+import ListFeed from './routes/list-feed.tsx'
 import Tweets from './routes/tweets.jsx'
 import Users, { loader as usersLoader } from './routes/users.jsx'
 import Hashtags, { loader as hashtagsLoader } from './routes/hashtags.jsx'
@@ -33,6 +34,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Feed />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'list-feed',
+        element: (
+          <ProtectedRoute>
+            <ListFeed />
           </ProtectedRoute>
         ),
       },

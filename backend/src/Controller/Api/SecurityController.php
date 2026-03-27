@@ -21,16 +21,11 @@ class SecurityController extends AbstractController
         ApiTokenManager $tokenManager
     ): Response {
         if (!$user) {
-            error_log("❌ LOGIN - Credentials invalides");
             return $this->json(['error' => 'Invalid credentials.'], 401);
         }
 
-        error_log("✅ LOGIN - Utilisateur authentifié: {$user->getEmail()} (ID: {$user->getId()})");
-
         // Génère un token, l'enregistre en base, retourne le token brut
         $rawToken = $tokenManager->generateTokenForUser($user);
-
-        error_log("✅ LOGIN - Token généré retourné au client");
 
         return $this->json([
             'token' => $rawToken
