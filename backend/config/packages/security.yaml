@@ -65,6 +65,8 @@ security:
         - { path: ^/api/login_check$, roles: PUBLIC_ACCESS }
         - { path: ^/api/users$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/users$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/users/me$, roles: ROLE_USER, methods: [GET] }
         - { path: ^/api/users/\d+$, roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/api/tweets/explore$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/tweets, roles: ROLE_USER }
         - { path: ^/api, roles: ROLE_USER }

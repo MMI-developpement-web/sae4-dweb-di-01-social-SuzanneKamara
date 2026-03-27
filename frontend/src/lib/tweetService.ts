@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchJson } from './api'
+import { apiFetch, apiFetchJson, apiFetchPublic } from './api'
 import { buildApiUrl } from './apiConfig'
 
 export interface Tweet {
@@ -191,7 +191,7 @@ export async function fetchFollowingTweetsPage(limit = 40, offset = 0): Promise<
 }
 
 export async function fetchExploreTweetsPage(limit = 40, offset = 0): Promise<FollowingTweetsPage> {
-  const response = await apiFetch(buildApiUrl(`/tweets/explore?limit=${limit}&offset=${offset}`), {
+  const response = await apiFetchPublic(buildApiUrl(`/tweets/explore?limit=${limit}&offset=${offset}`), {
     method: 'GET',
     headers: {
       Accept: 'application/json',

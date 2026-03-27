@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
 import { cn } from '../../lib/utils.ts'
 import Button from './Button.tsx'
+import LikeButton from './LikeButton.tsx'
 import type { Tweet } from '../../lib/tweetService'
 import { deleteTweet, updateTweet } from '../../lib/tweetService'
-import { likeTweet, unlikeTweet, getLikesByUserAndTweet } from '../../lib/likeService'
-import { useAuth } from '../../auth/useAuth'
 
 interface TweetCardProps {
   tweet: Tweet
@@ -24,38 +23,10 @@ export default function TweetCard({
   isOwnTweet = false,
   className,
 }: TweetCardProps) {
-  const { userId: currentUserId } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(tweet.content)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isLiked, setIsLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(tweet.likes || 0)
-  const [likeId, setLikeId] = useState<number | null>(null)
-  const [isLikeLoading, setIsLikeLoading] = useState(false)
-
-  // Load like status for current user
-  useEffect(() => {
-    const loadLikeStatus = async () => {
-      try {
-        const likes = await getLikesByUserAndTweet(currentUserId, tweet.id)
-        if (likes.length > 0) {
-          setIsLiked(true)
-          setLikeId(likes[0].id)
-        } else {
-          setIsLiked(false)
-          setLikeId(null)
-        }
-      } catch (err) {
-        console.error('Failed to load like status:', err)
-        setIsLiked(false)
-      }
-    }
-
-    if (currentUserId) {
-      loadLikeStatus()
-    }
-  }, [tweet.id, currentUserId])
 
   const handleEdit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -98,33 +69,7 @@ export default function TweetCard({
     }
   }
 
-  const handleLikeToggle = async () => {
-    if (!currentUserId) return
 
-    try {
-      setIsLikeLoading(true)
-
-      if (isLiked && likeId) {
-        // Unlike
-        await unlikeTweet(likeId)
-        setIsLiked(false)
-        setLikeCount((prev) => Math.max(0, prev - 1))
-        setLikeId(null)
-      } else {
-        // Like
-        const result = await likeTweet(tweet.id)
-        setIsLiked(true)
-        setLikeCount((prev) => prev + 1)
-        setLikeId(result.id)
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to toggle like.'
-      setError(message)
-      onError?.(message)
-    } finally {
-      setIsLikeLoading(false)
-    }
-  }
 
   const createdAt = tweet.createdAt
     ? new Date(tweet.createdAt).toLocaleDateString('fr-FR', {
@@ -228,19 +173,7 @@ export default function TweetCard({
       )}
 
       <div className='flex gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500'>
-        <button
-          type='button'
-          onClick={handleLikeToggle}
-          disabled={isLikeLoading}
-          className={cn(
-            'hover:text-orange-500 transition-colors flex items-center gap-1',
-            isLiked && 'text-red-500',
-            isLikeLoading && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-          <span>{isLiked ? '❤️' : '♡'}</span>
-          <span>{likeCount > 0 ? likeCount : 'Like'}</span>
-        </button>
+        <LikeButton tweetId={tweet.id} initialLikeCount={tweet.likes || 0} />
         <button type='button' className='hover:text-blue-500'>
           💬 Reply
         </button>

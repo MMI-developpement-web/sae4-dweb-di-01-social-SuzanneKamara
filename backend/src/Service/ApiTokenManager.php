@@ -14,34 +14,45 @@ class ApiTokenManager
 
     public function generateTokenForUser(User $user): string
     {
-        $userId = $user->getId();
-        if (!$userId) {
-            throw new \LogicException('Cannot generate a token for a user without ID.');
-        }
-
         // Générer un token brut
         $rawToken = bin2hex(random_bytes(32));
 
         // Hacher le token
         $hashedToken = hash('sha256', $rawToken);
 
-        // Rechercher par user_id pour éviter les problèmes d'entité détachée.
-        $token = $this->em->getRepository(ApiToken::class)
-            ->createQueryBuilder('t')
-            ->andWhere('IDENTITY(t.user) = :userId')
-            ->setParameter('userId', $userId)
-            ->getQuery()
-            ->getOneOrNullResult();
+        error_log("🔐 TOKEN MANAGER - Génération pour user ID: {$user->getId()}, Token brut commence par: " . substr($rawToken, 0, 8));
 
-        if ($token instanceof ApiToken) {
-            $token->setToken($hashedToken);
-            $token->setCreatedAt(new \DateTimeImmutable());
+        $userId = $user->getId();
+
+        // Utiliser une requête SQL directe pour UPDATE ou INSERT
+        $conn = $this->em->getConnection();
+        
+        // Vérifier si un token existe déjà
+        $existingToken = $conn->fetchOne(
+            'SELECT token FROM api_token WHERE user_id = ? LIMIT 1',
+            [$userId],
+            ['integer']
+        );
+
+        if ($existingToken) {
+            // UPDATE - Garder le user_id unique
+            error_log("🔐 TOKEN MANAGER - UPDATE du token existant (old hash begin: " . substr($existingToken, 0, 8) . ")");
+            $conn->executeStatement(
+                'UPDATE api_token SET token = ?, created_at = NOW() WHERE user_id = ?',
+                [$hashedToken, $userId],
+                ['string', 'integer']
+            );
         } else {
-            $token = new ApiToken($user, $hashedToken);
-            $this->em->persist($token);
+            // INSERT
+            error_log("🔐 TOKEN MANAGER - INSERT d'un nouveau token");
+            $conn->executeStatement(
+                'INSERT INTO api_token (user_id, token, created_at) VALUES (?, ?, NOW())',
+                [$userId, $hashedToken],
+                ['integer', 'string']
+            );
         }
 
-        $this->em->flush();
+        error_log("🔐 TOKEN MANAGER - Token persisté en BDD (new hash begin: " . substr($hashedToken, 0, 8) . ")");
 
         // Retourner le token brut au front
         return $rawToken;

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controller\Api;
 
 use App\Entity\User;
@@ -15,16 +16,21 @@ class SecurityController extends AbstractController
     ) {}
 
     #[Route('/login_check', name: 'login_check', methods: ['POST'], format: 'json')]
-     public function login(
+    public function login(
         #[CurrentUser] ?User $user,
         ApiTokenManager $tokenManager
     ): Response {
         if (!$user) {
+            error_log("❌ LOGIN - Credentials invalides");
             return $this->json(['error' => 'Invalid credentials.'], 401);
         }
 
-        // Génère un token, l’enregistre en base, retourne le token brut
+        error_log("✅ LOGIN - Utilisateur authentifié: {$user->getEmail()} (ID: {$user->getId()})");
+
+        // Génère un token, l'enregistre en base, retourne le token brut
         $rawToken = $tokenManager->generateTokenForUser($user);
+
+        error_log("✅ LOGIN - Token généré retourné au client");
 
         return $this->json([
             'token' => $rawToken
