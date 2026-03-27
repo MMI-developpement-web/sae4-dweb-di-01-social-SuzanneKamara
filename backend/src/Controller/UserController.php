@@ -34,7 +34,7 @@ class UserController extends AbstractController
         }
 
         $users = array_map(
-            fn (User $user): array => $this->toArray($user),
+            fn(User $user): array => $this->toArray($user),
             $userRepository->findAll()
         );
 
@@ -49,6 +49,22 @@ class UserController extends AbstractController
         }
 
         return $this->json($this->toArray($user));
+    }
+
+    #[Route('/me', name: 'api_user_me', methods: ['GET'])]
+    public function me(UserRepository $userRepository): JsonResponse
+    {
+        $authUser = $this->getUser();
+        if (!$authUser instanceof \App\Entity\User) {
+            return $this->json(['error' => 'Authentification requise'], 401);
+        }
+
+        $currentUser = $userRepository->findOneBy(['email' => $authUser->getEmail()]);
+        if (!$currentUser) {
+            return $this->json(['error' => 'Utilisateur introuvable'], 404);
+        }
+
+        return $this->json($this->toArray($currentUser));
     }
 
     #[Route('', name: 'api_user_create', methods: ['POST'])]

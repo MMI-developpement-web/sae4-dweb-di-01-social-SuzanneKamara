@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { AuthContext, type LoginPayload } from './AuthContextValue'
 import { clearCookie, getSessionToken, setSessionCookie, TOKEN_COOKIE_KEY } from '../lib/sessionCookie'
 import { buildApiUrl } from '../lib/apiConfig'
+import { apiFetchJson } from '../lib/api'
 
 const LOGIN_API_URL = buildApiUrl('/login_check')
 
@@ -27,6 +28,7 @@ function extractErrorMessage(payload: unknown): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getSessionToken())
+  const [userId, setUserId] = useState<number | null>(null)
 
   const login = async ({ identifier, password }: LoginPayload) => {
     const response = await fetch(LOGIN_API_URL, {
@@ -62,11 +64,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setSessionCookie(TOKEN_COOKIE_KEY, extractedToken)
     setToken(extractedToken)
+
+    // Fetch current user data to get userId
+    try {
+      const userResponse = await apiFetchJson<{ id: number }>(buildApiUrl('/users/me'))
+      setUserId(userResponse.id)
+    } catch (err) {
+      console.error('Failed to fetch current user:', err)
+      setUserId(null)
+    }
   }
 
   const logout = () => {
     clearCookie(TOKEN_COOKIE_KEY)
     setToken(null)
+    setUserId(null)
   }
 
   const cookieToken = getSessionToken()
@@ -75,11 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       token,
+      userId,
       isAuthenticated,
       login,
       logout,
     }),
-    [isAuthenticated, token]
+    [isAuthenticated, token, userId]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

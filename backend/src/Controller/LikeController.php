@@ -12,18 +12,42 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/likes')]
+#[Route('/api/likes')]
 class LikeController extends AbstractController
 {
     #[Route('', name: 'api_like_index', methods: ['GET'])]
-    public function index(LikeRepository $likeRepository): JsonResponse
+    public function index(Request $request, LikeRepository $likeRepository, UserRepository $userRepository, TweetRepository $tweetRepository): JsonResponse
     {
-        $likes = array_map(
-            fn(Like $like): array => $this->toArray($like),
-            $likeRepository->findAll()
-        );
+        $userId = $request->query->get('user_id');
+        $tweetId = $request->query->get('tweet_id');
 
-        return $this->json($likes);
+        // Filter by user_id and/or tweet_id
+        $criteria = [];
+        if ($userId) {
+            $user = $userRepository->find($userId);
+            if (!$user) {
+                return $this->json(['error' => 'User not found'], 404);
+            }
+            $criteria['user'] = $user;
+        }
+
+        if ($tweetId) {
+            $tweet = $tweetRepository->find($tweetId);
+            if (!$tweet) {
+                return $this->json(['error' => 'Tweet not found'], 404);
+            }
+            $criteria['tweet'] = $tweet;
+        }
+
+        $likes = $likeRepository->findBy($criteria);
+
+        return $this->json([
+            'data' => array_map(
+                fn(Like $like): array => $this->toArray($like),
+                $likes
+            ),
+            'count' => count($likes),
+        ]);
     }
 
     #[Route('/{id}', name: 'api_like_show', methods: ['GET'])]
@@ -40,21 +64,24 @@ class LikeController extends AbstractController
     public function create(
         Request $request,
         EntityManagerInterface $entityManager,
-        UserRepository $userRepository,
         TweetRepository $tweetRepository
     ): JsonResponse {
+        // Vérifier que l'utilisateur est authentifié
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Authentification requise'], 401);
+        }
+
         $data = json_decode($request->getContent(), true);
 
         // Validation des données entrantes
-        if (!isset($data['user_id']) || !isset($data['tweet_id'])) {
-            return $this->json(['error' => 'user_id et tweet_id sont requis'], 400);
+        if (!isset($data['tweet_id'])) {
+            return $this->json(['error' => 'tweet_id est requis'], 400);
         }
 
-        $user = $userRepository->find($data['user_id']);
         $tweet = $tweetRepository->find($data['tweet_id']);
-
-        if (!$user || !$tweet) {
-            return $this->json(['error' => 'Utilisateur ou Tweet introuvable'], 404);
+        if (!$tweet) {
+            return $this->json(['error' => 'Tweet introuvable'], 404);
         }
 
         // Création du Like

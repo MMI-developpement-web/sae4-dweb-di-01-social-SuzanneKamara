@@ -7,6 +7,7 @@ export type LoginPayload = {
 
 export type AuthContextType = {
   token: string | null
+  userId: number | null
   isAuthenticated: boolean
   login: (payload: LoginPayload) => Promise<void>
   logout: () => void

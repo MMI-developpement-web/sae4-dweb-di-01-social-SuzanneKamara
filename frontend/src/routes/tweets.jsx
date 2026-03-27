@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { FiCompass, FiHeart, FiHome, FiMessageSquare, FiPlus, FiRepeat, FiX } from 'react-icons/fi';
 import { fetchExploreTweetsPage } from '../lib/tweetService';
+import { likeTweet, unlikeTweet, getLikesByUserAndTweet } from '../lib/likeService';
 import { useAuth } from '../auth/useAuth';
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext';
 import RefreshButton from '../component/ui/RefreshButton';
@@ -28,6 +29,64 @@ function LargeTweetOverlay({ tweet, onClose }) {
         minute: '2-digit',
       })
     : 'Date inconnue';
+
+  // Like state
+  const { userId: currentUserId } = useAuth();
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(tweet.likes || 0);
+  const [likeId, setLikeId] = useState(null);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+  // Load like status when tweet or user changes
+  useEffect(() => {
+    const loadLikeStatus = async () => {
+      try {
+        const likes = await getLikesByUserAndTweet(currentUserId, tweet.id);
+        if (likes.length > 0) {
+          setIsLiked(true);
+          setLikeId(likes[0].id);
+        } else {
+          setIsLiked(false);
+          setLikeId(null);
+        }
+      } catch (err) {
+        console.error('Failed to load like status:', err);
+        setIsLiked(false);
+      }
+    };
+
+    if (currentUserId) {
+      loadLikeStatus();
+    }
+  }, [tweet.id, currentUserId]);
+
+  const handleLikeToggle = async (e) => {
+    e.stopPropagation();
+
+    if (!currentUserId) return;
+
+    try {
+      setIsLikeLoading(true);
+
+      if (isLiked && likeId) {
+        // Unlike
+        await unlikeTweet(likeId);
+        setIsLiked(false);
+        setLikeCount((prev) => Math.max(0, prev - 1));
+        setLikeId(null);
+      } else {
+        // Like
+        const result = await likeTweet(tweet.id);
+        setIsLiked(true);
+        setLikeCount((prev) => prev + 1);
+        setLikeId(result.id);
+      }
+    } catch (err) {
+      console.error('Failed to toggle like:', err);
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[1px]'>
@@ -78,9 +137,20 @@ function LargeTweetOverlay({ tweet, onClose }) {
           </div>
 
           <div className='mt-[15px] mb-[8px] ml-[22px] flex items-center gap-[19px]'>
-            <button type='button' aria-label='Like' className='grid size-[35px] cursor-pointer place-items-center text-[#DE6E2D] transition-transform hover:scale-110'>
-              <FiHeart className='size-[28px]' aria-hidden='true' />
+            <button
+              type='button'
+              onClick={handleLikeToggle}
+              disabled={isLikeLoading}
+              aria-label={isLiked ? 'Unlike' : 'Like'}
+              className={`grid size-[35px] cursor-pointer place-items-center transition-transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isLiked ? 'text-red-500' : 'text-[#DE6E2D]'
+              }`}
+            >
+              <FiHeart className='size-[28px]' fill={isLiked ? 'currentColor' : 'none'} aria-hidden='true' />
             </button>
+            {likeCount > 0 && (
+              <span className='text-sm text-gray-600'>{likeCount}</span>
+            )}
             <button type='button' aria-label='Retweet' className='grid size-[35px] cursor-pointer place-items-center transition-transform hover:scale-110'>
               <FiRepeat className='size-[28px]' aria-hidden='true' />
             </button>

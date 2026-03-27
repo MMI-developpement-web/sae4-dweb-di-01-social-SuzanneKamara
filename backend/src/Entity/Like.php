@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: LikeRepository::class)]
 #[ORM\Table(name: '`like`')]
+#[ORM\UniqueConstraint(name: 'unique_user_tweet', columns: ['user_id', 'tweet_id'])]
 class Like
 {
     #[ORM\Id]

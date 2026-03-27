@@ -28,7 +28,7 @@ class TweetController extends AbstractController
         }
 
         return $this->json([
-            'data' => array_map(fn (Tweet $tweet): array => $this->toArray($tweet), $tweets),
+            'data' => array_map(fn(Tweet $tweet): array => $this->toArray($tweet), $tweets),
             'has_more' => $hasMore,
             'limit' => $limit,
             'offset' => $offset,
@@ -59,7 +59,7 @@ class TweetController extends AbstractController
         }
 
         return $this->json([
-            'data' => array_map(fn (Tweet $tweet): array => $this->toArray($tweet), $tweets),
+            'data' => array_map(fn(Tweet $tweet): array => $this->toArray($tweet), $tweets),
             'has_more' => $hasMore,
             'limit' => $limit,
             'offset' => $offset,
@@ -70,7 +70,7 @@ class TweetController extends AbstractController
     public function index(TweetRepository $tweetRepository): JsonResponse
     {
         $tweets = array_map(
-            fn (Tweet $tweet): array => $this->toArray($tweet),
+            fn(Tweet $tweet): array => $this->toArray($tweet),
             $tweetRepository->findAllWithUser()
         );
 
@@ -160,11 +160,11 @@ class TweetController extends AbstractController
             if (!is_string($data['content']) || trim($data['content']) === '') {
                 return $this->json(['error' => 'Le champ content doit etre une chaine non vide'], 400);
             }
-            
+
             if (mb_strlen($data['content']) > 280) {
                 return $this->json(['error' => 'Le contenu ne doit pas depasser 280 caracteres'], 400);
             }
-            
+
             $tweet->setContent(trim($data['content']));
         }
 
@@ -195,7 +195,8 @@ class TweetController extends AbstractController
     private function toArray(Tweet $tweet): array
     {
         $user = $tweet->getUser();
-        
+        $likes = $tweet->getLiked() ?? [];
+
         return [
             'id' => $tweet->getId(),
             'user_id' => $tweet->getUserId(),
@@ -207,6 +208,7 @@ class TweetController extends AbstractController
             ] : null,
             'content' => $tweet->getContent(),
             'created_at' => $tweet->getCreatedAt()?->format(DATE_ATOM),
+            'likes' => count($likes),
         ];
     }
 }
