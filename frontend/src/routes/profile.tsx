@@ -2,6 +2,9 @@ import { useCallback, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiEdit2, FiMapPin, FiGlobe } from 'react-icons/fi'
 import { useAuth } from '../auth/useAuth'
+import { getCurrentUser } from '../lib/userService'
+import { fetchUserTweetsPage, type Tweet } from '../lib/tweetService'
+import TweetCard from '../component/ui/TweetCard'
 
 interface UserData {
   id: number
@@ -20,7 +23,8 @@ export default function Profile() {
   const { isAuthenticated, token } = useAuth()
   const [userData, setUserData] = useState<UserData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [userPosts, setUserPosts] = useState<any[]>([])
+  const [userTweets, setUserTweets] = useState<Tweet[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -28,9 +32,38 @@ export default function Profile() {
       return
     }
 
-    // Fetch user data - will be implemented once we have the current user endpoint
-    // For now, we'll just display a placeholder
-    setIsLoading(false)
+    const loadProfileData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        // Fetch current user data
+        const user = await getCurrentUser()
+        setUserData({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          bio: user.bio,
+          avatar_url: user.avatar_url,
+          banner_url: user.banner_url,
+          location: user.location,
+          website_url: user.website_url,
+          is_verified: user.is_verified,
+        })
+
+        // Fetch user's tweets
+        const tweetsPage = await fetchUserTweetsPage(user.id, 40, 0)
+        setUserTweets(tweetsPage.tweets)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Erreur lors du chargement du profil'
+        setError(message)
+        console.error('Error loading profile:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProfileData()
   }, [isAuthenticated, navigate])
 
   if (isLoading) {
@@ -38,6 +71,25 @@ export default function Profile() {
       <div className='editorial-bg min-h-screen w-full pb-[132px]'>
         <div className='mx-auto flex w-full max-w-[375px] items-center justify-center pt-20'>
           <p className='text-gray-500'>Chargement du profil...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className='editorial-bg min-h-screen w-full pb-[132px]'>
+        <div className='mx-auto flex w-full max-w-[375px] flex-col items-center'>
+          <button
+            onClick={() => navigate(-1)}
+            className='self-start p-4'
+            aria-label='Retour'
+          >
+            <FiArrowLeft size={24} />
+          </button>
+          <div className='flex items-center justify-center pt-20'>
+            <p className='text-gray-500'>{error}</p>
+          </div>
         </div>
       </div>
     )
@@ -58,7 +110,14 @@ export default function Profile() {
         {/* Profile Content */}
         <div className='w-full px-[25px] space-y-4'>
           {/* Banner */}
-          <div className='relative h-[175px] rounded-[10px] overflow-hidden bg-gradient-to-r from-[#61bdfc]/30 via-[#595880]/30 to-[#3a7196]/30'>
+          <div
+            className='relative h-[175px] rounded-[10px] overflow-hidden bg-cover bg-center'
+            style={{
+              backgroundImage: userData?.banner_url
+                ? `url(${userData.banner_url})`
+                : 'linear-gradient(to right, rgba(97, 189, 252, 0.3), rgba(89, 88, 128, 0.3), rgba(58, 113, 150, 0.3))',
+            }}
+          >
             <button
               className='absolute bottom-3 right-3 bg-white p-2 rounded-lg hover:bg-gray-50'
               aria-label='Modifier la bannière'
@@ -72,9 +131,17 @@ export default function Profile() {
             {/* User Header */}
             <div className='flex items-start gap-3 pb-3 border-b border-gray-200'>
               <div className='relative shrink-0'>
-                <div className='size-[60px] rounded-full bg-[#939292] flex items-center justify-center text-white text-2xl font-bold'>
-                  {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                </div>
+                {userData?.avatar_url ? (
+                  <img
+                    src={userData.avatar_url}
+                    alt={userData.username}
+                    className='size-[60px] rounded-full object-cover'
+                  />
+                ) : (
+                  <div className='size-[60px] rounded-full bg-[#939292] flex items-center justify-center text-white text-2xl font-bold'>
+                    {userData?.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
               </div>
               <div className='flex-1 flex items-start justify-between'>
                 <div>
@@ -123,20 +190,20 @@ export default function Profile() {
             )}
           </div>
 
-          {/* User Posts Section */}
+          {/* User Tweets Section */}
           <div className='space-y-3'>
-            <h2 className='font-semibold text-black'>Posts</h2>
-            <div className='grid grid-cols-2 gap-3 rounded-[10px] overflow-hidden'>
-              {userPosts.length > 0 ? (
-                userPosts.map((post) => (
-                  <div key={post.id} className='bg-[#d6d6d6] rounded-[10px] aspect-square' />
-                ))
-              ) : (
-                <div className='col-span-2 bg-[#f0f0f0] rounded-[10px] py-12 flex items-center justify-center'>
-                  <p className='text-gray-500 text-sm'>Aucun post pour le moment</p>
-                </div>
-              )}
-            </div>
+            <h2 className='font-semibold text-black'>Tweets</h2>
+            {userTweets.length > 0 ? (
+              <div className='space-y-3'>
+                {userTweets.map((tweet) => (
+                  <TweetCard key={tweet.id} tweet={tweet} isOwnTweet={true} />
+                ))}
+              </div>
+            ) : (
+              <div className='bg-white rounded-[10px] py-12 flex items-center justify-center'>
+                <p className='text-gray-500 text-sm'>Aucun tweet pour le moment</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

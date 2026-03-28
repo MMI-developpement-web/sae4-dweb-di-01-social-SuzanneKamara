@@ -219,6 +219,35 @@ export async function fetchExploreTweetsPage(limit = 40, offset = 0): Promise<Fo
   }
 }
 
+export async function fetchUserTweetsPage(userId: string | number, limit = 40, offset = 0): Promise<FollowingTweetsPage> {
+  const response = await apiFetch(buildApiUrl(`/tweets/user/${userId}?limit=${limit}&offset=${offset}`), {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    await handleApiError(response)
+  }
+
+  const payload = (await response.json()) as unknown
+  const payloadRecord = toRecord(payload)
+
+  if (payloadRecord && Array.isArray(payloadRecord.data)) {
+    return {
+      tweets: normalizeTweetList(payloadRecord.data),
+      hasMore: Boolean(payloadRecord.has_more),
+    }
+  }
+
+  const tweets = normalizeTweetList(payload)
+  return {
+    tweets,
+    hasMore: tweets.length === limit,
+  }
+}
+
 export async function createTweet(payload: CreateTweetPayload): Promise<Tweet> {
   const response = await apiFetchJson<Tweet>(buildApiUrl('/tweets'), {
     method: 'POST',

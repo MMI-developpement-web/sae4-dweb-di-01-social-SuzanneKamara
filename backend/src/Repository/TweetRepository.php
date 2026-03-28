@@ -81,4 +81,23 @@ class TweetRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Returns tweets from a specific user, ordered newest first.
+     *
+     * @return Tweet[]
+     */
+    public function findByUserWithPagination(User $user, int $limit = 40, int $offset = 0): array
+    {
+        return $this->createQueryBuilder('t')
+            ->leftJoin('t.user', 'u')
+            ->addSelect('u')
+            ->andWhere('t.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('t.created_at', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getResult();
+    }
 }

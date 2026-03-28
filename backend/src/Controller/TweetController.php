@@ -66,6 +66,32 @@ class TweetController extends AbstractController
         ]);
     }
 
+    #[Route('/user/{userId}', name: 'api_tweet_user', methods: ['GET'])]
+    public function userTweets(int $userId, Request $request, TweetRepository $tweetRepository, UserRepository $userRepository): JsonResponse
+    {
+        $user = $userRepository->find($userId);
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur introuvable'], 404);
+        }
+
+        $limit = max(1, min(100, (int) $request->query->get('limit', 40)));
+        $offset = max(0, (int) $request->query->get('offset', 0));
+
+        $tweets = $tweetRepository->findByUserWithPagination($user, $limit + 1, $offset);
+        $hasMore = count($tweets) > $limit;
+
+        if ($hasMore) {
+            $tweets = array_slice($tweets, 0, $limit);
+        }
+
+        return $this->json([
+            'data' => array_map(fn(Tweet $tweet): array => $this->toArray($tweet), $tweets),
+            'has_more' => $hasMore,
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+    }
+
     #[Route('', name: 'api_tweet_index', methods: ['GET'])]
     public function index(TweetRepository $tweetRepository): JsonResponse
     {
