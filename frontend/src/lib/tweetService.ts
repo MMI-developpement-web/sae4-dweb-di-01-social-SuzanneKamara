@@ -8,6 +8,7 @@ export interface Tweet {
     id: string | number
     username: string
     email: string
+    is_blocked?: boolean
   }
   hashtags?: Array<{
     id: string | number
@@ -55,6 +56,7 @@ function toTweet(item: unknown): Tweet | null {
   const authorId = authorRaw.id ?? authorRaw['@id'] ?? 'unknown'
   const usernameCandidate = authorRaw.username ?? authorRaw.name ?? authorRaw.displayName
   const emailCandidate = authorRaw.email
+  const isBlockedCandidate = authorRaw.is_blocked ?? authorRaw.isBlocked ?? false
 
   const hashtagsRaw = Array.isArray(raw.hashtags) ? raw.hashtags : []
   const hashtags: Array<{ id: string | number; name: string }> = []
@@ -85,6 +87,7 @@ function toTweet(item: unknown): Tweet | null {
       id: String(authorId),
       username: typeof usernameCandidate === 'string' ? usernameCandidate : 'unknown',
       email: typeof emailCandidate === 'string' ? emailCandidate : '',
+      is_blocked: Boolean(isBlockedCandidate),
     },
     hashtags,
     createdAt:

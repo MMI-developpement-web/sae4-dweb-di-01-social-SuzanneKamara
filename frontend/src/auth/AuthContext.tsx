@@ -51,6 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const payload = await response.json().catch(() => null)
       const backendMessage = extractErrorMessage(payload).toLowerCase()
 
+      if (backendMessage.includes('bloqué') || backendMessage.includes('blocked')) {
+        throw new Error('Votre compte a été bloqué pour non respect des conditions d\'utilisation.')
+      }
+
       if (backendMessage.includes('confirmer votre email') || backendMessage.includes('email')) {
         throw new Error('Vous n\'avez pas valide votre email. Veuillez consulter votre boite mail pour le faire.')
       }

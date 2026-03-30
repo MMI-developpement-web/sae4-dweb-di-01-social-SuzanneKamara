@@ -203,6 +203,7 @@ class UserController extends AbstractController
             'location' => $user->getLocation(),
             'website_url' => $user->getWebsiteUrl(),
             'is_verified' => $user->isVerified(),
+            'is_blocked' => $user->isBlocked(),
         ];
     }
 }

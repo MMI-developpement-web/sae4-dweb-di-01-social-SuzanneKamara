@@ -1,6 +1,7 @@
 function getLocalBackendBaseUrl() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
-    return `http://${window.location.hostname}:8080`
+    const protocol = window.location.protocol || 'http:'
+    return `${protocol}//${window.location.hostname}:8080`
   }
 
   return 'http://localhost:8080'

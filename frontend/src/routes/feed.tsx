@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FiCompass, FiHeart, FiHome, FiMessageSquare, FiPlus, FiRepeat } from 'react-icons/fi'
+import { FiCompass, FiHome, FiMessageSquare, FiPlus, FiRepeat } from 'react-icons/fi'
 import TweetComposer from '../component/ui/TweetComposer'
 import RefreshButton from '../component/ui/RefreshButton'
 import FollowButton from '../component/ui/FollowButton'
+import LikeButton from '../component/ui/LikeButton'
 import { useAuth } from '../auth/useAuth'
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext'
 import type { FollowingTweetsPage, Tweet } from '../lib/tweetService'
@@ -21,6 +22,7 @@ function extractHashtagNames(tweet: Tweet): string[] {
 }
 
 function PostCard({ tweet }: { tweet: Tweet }) {
+  const isAuthorBlocked = tweet.author?.is_blocked === true
   const hashtags = extractHashtagNames(tweet)
   const createdAt = tweet.createdAt
     ? new Date(tweet.createdAt).toLocaleDateString('fr-FR', {
@@ -36,46 +38,62 @@ function PostCard({ tweet }: { tweet: Tweet }) {
     <div className='relative mb-[28px] w-[333px]'>
       <div className='absolute top-[30px] left-[8px] -z-10 h-[555px] w-[322px] border-2 border-black/10 bg-white/20' />
 
-      <div className='ui-surface relative h-[558px] w-[325px] overflow-hidden'>
+      <div className={`ui-surface relative h-[558px] w-[325px] overflow-hidden ${isAuthorBlocked ? 'bg-yellow-50' : ''}`}>
         <div className='flex items-start justify-between p-[20px]'>
-          <div className='pt-[18px]'>
-            <p className='ui-title text-[37px] leading-[22px] text-[#6d6d6d]'>@{tweet.author?.username || 'username'}</p>
-            <p className='ui-kicker mt-2 text-[10px] text-[#8a8a8a]'>{createdAt}</p>
+           {/* pt-[18px] */}
+              <div className=' flex-1 min-w-0'>
+                <p className='ui-title text-[30px] leading-[22px] text-[#6d6d6d] max-w-[90%] truncate pt-[18px]'>@{tweet.author?.username || 'username'}</p>
+                <p className='ui-kicker mt-2 text-[10px] text-[#8a8a8a]'>{createdAt}</p>
           </div>
 
-          <div className='relative'>
+          <div className='relative flex-shrink-0'>
             <div className='size-[51px] rounded-full bg-[#D3D3D3]' />
-            <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
-              <FollowButton 
-                targetUserId={tweet.author?.id} 
-                className='text-white hover:text-blue-300'
-              />
+            {!isAuthorBlocked && (
+              <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
+                <FollowButton 
+                  targetUserId={tweet.author?.id} 
+                  className='text-white hover:text-blue-300'
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {isAuthorBlocked ? (
+          <div className='flex h-[calc(100%-91px)] flex-col items-center justify-center px-[22px] pb-[20px]'>
+            <p className='text-[24px] font-semibold text-yellow-900 mb-2'>⚠️</p>
+            <p className='text-center text-[14px] font-semibold text-yellow-900'>Ce compte a été bloqué</p>
+            <p className='text-center text-[12px] text-yellow-800 mt-1'>pour non respect des conditions d'utilisation</p>
+          </div>
+        ) : (
+          <div className='flex h-[calc(100%-91px)] flex-col px-[22px] pb-[20px]'>
+            <p className='ui-kicker mb-[18px] text-[12px] leading-[16px] text-[#747272]'>
+              {hashtags.length > 0 ? hashtags.join(' ') : '#post #contenu'}
+            </p>
+
+            <div className='flex-1 overflow-auto whitespace-pre-line text-[34px] leading-[42px] text-[#111]'>
+              {tweet.content}
             </div>
           </div>
-        </div>
-
-        <div className='flex h-[calc(100%-91px)] flex-col px-[22px] pb-[20px]'>
-          <p className='ui-kicker mb-[18px] text-[12px] leading-[16px] text-[#747272]'>
-            {hashtags.length > 0 ? hashtags.join(' ') : '#post #contenu'}
-          </p>
-
-          <div className='flex-1 overflow-auto whitespace-pre-line text-[34px] leading-[42px] text-[#111]'>
-            {tweet.content}
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className='mt-[15px] mb-[8px] ml-[22px] flex items-center gap-[19px]'>
-        <button type='button' aria-label='Like' className='grid size-[35px] cursor-pointer place-items-center text-[#DE6E2D] transition-transform hover:scale-110'>
-          <FiHeart className='size-[28px]' aria-hidden='true' />
-        </button>
-        <button type='button' aria-label='Retweet' className='grid size-[35px] cursor-pointer place-items-center transition-transform hover:scale-110'>
-          <FiRepeat className='size-[28px]' aria-hidden='true' />
-        </button>
-        <button type='button' aria-label='Commenter' className='grid size-[35px] cursor-pointer place-items-center transition-transform hover:scale-110'>
-          <FiMessageSquare className='size-[26px]' aria-hidden='true' />
-        </button>
-      </div>
+      {!isAuthorBlocked && (
+        <div className='mt-[15px] mb-[8px] ml-[22px] flex items-center gap-[19px]'>
+          <LikeButton 
+            tweetId={tweet.id} 
+            initialLikeCount={tweet.likes || 0}
+            displayText={false}
+            className='text-[#DE6E2D] hover:text-red-500 w-[35px] h-[35px] grid place-items-center rounded-full transition-transform hover:scale-110'
+          />
+          <button type='button' aria-label='Retweet' className='grid size-[35px] cursor-pointer place-items-center transition-transform hover:scale-110'>
+            <FiRepeat className='size-[28px]' aria-hidden='true' />
+          </button>
+          <button type='button' aria-label='Commenter' className='grid size-[35px] cursor-pointer place-items-center transition-transform hover:scale-110'>
+            <FiMessageSquare className='size-[26px]' aria-hidden='true' />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

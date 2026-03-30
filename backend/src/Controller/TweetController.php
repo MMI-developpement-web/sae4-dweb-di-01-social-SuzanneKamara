@@ -226,11 +226,19 @@ class TweetController extends AbstractController
         return [
             'id' => $tweet->getId(),
             'user_id' => $tweet->getUserId(),
+            'author' => $user ? [
+                'id' => $user->getId(),
+                'username' => $user->getUsername(),
+                'email' => $user->getEmail(),
+                'avatar_url' => $user->getAvatarUrl(),
+                'is_blocked' => $user->isBlocked(),
+            ] : null,
             'user' => $user ? [
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
                 'email' => $user->getEmail(),
                 'avatar_url' => $user->getAvatarUrl(),
+                'is_blocked' => $user->isBlocked(),
             ] : null,
             'content' => $tweet->getContent(),
             'created_at' => $tweet->getCreatedAt()?->format(DATE_ATOM),

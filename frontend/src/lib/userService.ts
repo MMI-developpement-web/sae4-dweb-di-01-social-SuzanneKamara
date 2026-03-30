@@ -11,6 +11,7 @@ export interface CurrentUser {
   location?: string
   website_url?: string
   is_verified?: boolean
+  is_blocked?: boolean
 }
 
 const ME_ENDPOINT = '/api/users/me'

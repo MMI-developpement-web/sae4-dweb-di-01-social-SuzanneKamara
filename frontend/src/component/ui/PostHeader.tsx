@@ -12,7 +12,7 @@ export default function PostHeader({
   return (
     <div className="flex items-center gap-3 mb-4">
       <Avatar url={userAvatar} name={userName} />
-      <span className="text-sm font-medium text-gray-700">{userName}</span>
+      <span className="text-sm font-medium text-gray-700 w-[13.6rem] truncate">{userName}</span>
     </div>
   );
 }

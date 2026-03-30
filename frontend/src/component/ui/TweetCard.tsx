@@ -126,24 +126,29 @@ export default function TweetCard({
     )
   }
 
+  // Check if the author is blocked
+  const isAuthorBlocked = tweet.author?.is_blocked === true
+
   return (
     <article
       className={cn(
         'rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md',
+        isAuthorBlocked ? 'relative overflow-hidden' : '',
         className
       )}
     >
-      <div className='mb-3 flex items-start justify-between'>
-        <div className='flex-1'>
-          <p className='text-sm font-semibold text-gray-900'>@{tweet.author?.username || 'unknown'}</p>
+      <div className='mb-3 flex items-start justify-between gap-2'>
+        <div className='min-w-0 flex-1 max-w-[70%]'>
+          <p className='text-sm font-semibold text-gray-900 truncate'>@{tweet.author?.username || 'unknown'}</p>
           <p className='text-xs text-gray-500'>{createdAt}</p>
         </div>
 
-        {isOwnTweet ? (
-          <div className='flex gap-2'>
-            <button
-              type='button'
-              onClick={() => setIsEditing(true)}
+        <div className='flex-shrink-0'>
+          {!isAuthorBlocked && isOwnTweet ? (
+            <div className='flex gap-2'>
+              <button
+                type='button'
+                onClick={() => setIsEditing(true)}
               disabled={isLoading}
               className='rounded-md px-2 py-1 text-xs text-blue-600 hover:bg-blue-50'
             >
@@ -158,32 +163,77 @@ export default function TweetCard({
               Delete
             </button>
           </div>
-        ) : (
-          tweet.author?.id && <FollowButton targetUserId={tweet.author.id} showLabel={false} />
-        )}
-      </div>
-
-      <p className='mb-3 text-sm text-gray-700 leading-relaxed'>{tweet.content}</p>
-
-      {tweet.hashtags && tweet.hashtags.length > 0 && (
-        <div className='mb-3 flex flex-wrap gap-2'>
-          {tweet.hashtags.map((tag) => (
-            <span key={tag.id} className='text-xs text-blue-600 hover:underline cursor-pointer'>
-              #{tag.name}
-            </span>
-          ))}
+          ) : !isAuthorBlocked ? (
+            tweet.author?.id && <FollowButton targetUserId={tweet.author.id} showLabel={false} />
+          ) : null}
         </div>
-      )}
-
-      <div className='flex gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500'>
-        <LikeButton tweetId={tweet.id} initialLikeCount={tweet.likes || 0} />
-        <button type='button' className='hover:text-blue-500'>
-          💬 Reply
-        </button>
-        <button type='button' className='hover:text-green-500'>
-          ↻ Retweet
-        </button>
       </div>
+
+      {isAuthorBlocked ? (
+        <div className='relative w-full min-h-[200px]'>
+          {/* Contenu flou */}
+          <div className='blur-md pointer-events-none select-none opacity-30'>
+            <p className='mb-3 text-sm text-gray-700 leading-relaxed'>{tweet.content}</p>
+
+            {tweet.hashtags && tweet.hashtags.length > 0 && (
+              <div className='mb-3 flex flex-wrap gap-2'>
+                {tweet.hashtags.map((tag) => (
+                  <span key={tag.id} className='text-xs text-blue-600 hover:underline cursor-pointer'>
+                    #{tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className='flex gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500'>
+              <span>❤️ {tweet.likes || 0}</span>
+              <button type='button' className='hover:text-blue-500'>
+                💬 Reply
+              </button>
+              <button type='button' className='hover:text-green-500'>
+                ↻ Retweet
+              </button>
+            </div>
+          </div>
+
+          {/* Message d'avertissement en superposition */}
+          <div className='absolute inset-0 flex items-center justify-center'>
+            <div className='text-center px-6 py-8 bg-yellow-100/90 rounded-lg border-2 border-yellow-600'>
+              <p className='text-lg font-bold text-yellow-900'>⚠️</p>
+              <p className='text-sm font-semibold text-yellow-900 mt-2'>
+                Ce compte a été bloqué
+              </p>
+              <p className='text-xs text-yellow-800 mt-1'>
+                pour non respect des conditions d'utilisation
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className='mb-3 text-sm text-gray-700 leading-relaxed'>{tweet.content}</p>
+
+          {tweet.hashtags && tweet.hashtags.length > 0 && (
+            <div className='mb-3 flex flex-wrap gap-2'>
+              {tweet.hashtags.map((tag) => (
+                <span key={tag.id} className='text-xs text-blue-600 hover:underline cursor-pointer'>
+                  #{tag.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className='flex gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500'>
+            <LikeButton tweetId={tweet.id} initialLikeCount={tweet.likes || 0} />
+            <button type='button' className='hover:text-blue-500'>
+              💬 Reply
+            </button>
+            <button type='button' className='hover:text-green-500'>
+              ↻ Retweet
+            </button>
+          </div>
+        </>
+      )}
 
       {error && <p className='mt-2 text-xs text-red-500'>{error}</p>}
     </article>
