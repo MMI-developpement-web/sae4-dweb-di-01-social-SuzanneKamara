@@ -11,26 +11,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # --- 1. BUILD DU FRONTEND (Projet Vite) ---
       - name: Install Node & Build Assets
         working-directory: ./frontend
         run: |
           npm install
           npm run build
-          # Cette ligne est cruciale pour que tes fichiers JS/CSS arrivent au bon endroit
-          cp -r dist/* ../public/
+          # On s'assure que le dossier public existe et on y injecte le build
+          mkdir -p public
+          cp -r dist/* public/
 
-      # --- 2. ENVOI DES FICHIERS ---
+      # --- 2. ENVOI DES FICHIERS VIA RSYNC ---
       - name: Deploy to Server via Rsync
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: "mmi.unilim.fr"
           REMOTE_USER: "kamara4"
-          # CHEMIN CORRIGÉ ICI :
+          # Chemin exact vers ton dossier sur le serveur MMI
           TARGET: "/home/kamara4/public_html/SAE4.DWeb-DI.01/CycleB/"
+          # On exclut les dossiers inutiles pour la prod
           EXCLUDE: "/node_modules/, /frontend/node_modules/, /tests/, /.git/, /.github/"
 
-      # --- 3. COMMANDES SYMFONY ---
+      # --- 3. COMMANDES DE FINALISATION (Permissions & Cache) ---
       - name: Post-deploy commands
         uses: appleboy/ssh-action@master
         with:
@@ -38,14 +41,15 @@ jobs:
           username: "kamara4"
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # On se déplace dans le bon dossier
+            # On entre dans le dossier du projet
             cd ~/public_html/SAE4.DWeb-DI.01/CycleB
 
-            # Nettoyage et installation
-            composer install --no-dev --optimize-autoloader || echo "Composer install failed or not found"
+            # Installation des dépendances Symfony (si composer est présent)
+            composer install --no-dev --optimize-autoloader || echo "Composer non trouvé ou erreur"
 
-            # On force le vidage du cache pour la prod
-            php bin/console cache:clear --env=prod --no-debug || echo "Cache clear failed"
+            # Nettoyage du cache Symfony (si c'est un projet Symfony)
+            php bin/console cache:clear --env=prod --no-debug || echo "Pas de console Symfony détectée"
 
-            # On s'assure que les permissions permettent à Apache de lire le dossier public
-            chmod -R 755 public/
+            # Sécurité et accès : On donne les droits de lecture au dossier public
+            # Ton site est dans frontend/public/ d'après ta structure
+            chmod -R 755 frontend/public/
