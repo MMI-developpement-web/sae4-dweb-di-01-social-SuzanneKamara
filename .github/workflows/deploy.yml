@@ -22,15 +22,14 @@ jobs:
           cp -r dist/* public/
 
       # --- 2. ENVOI DES FICHIERS VIA RSYNC ---
-      - name: Deploy to Server via Rsync
+      - - name: Deploy to Server via Rsync
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: "mmi.unilim.fr"
           REMOTE_USER: "kamara4"
-          # Chemin exact vers ton dossier sur le serveur MMI
+          REMOTE_PORT: 22 # <--- Vérifie si un autre port t'a été communiqué
           TARGET: "/home/kamara4/public_html/SAE4.DWeb-DI.01/CycleB/"
-          # On exclut les dossiers inutiles pour la prod
           EXCLUDE: "/node_modules/, /frontend/node_modules/, /tests/, /.git/, /.github/"
 
       # --- 3. COMMANDES DE FINALISATION (Permissions & Cache) ---
