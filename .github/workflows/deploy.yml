@@ -1,4 +1,4 @@
-name: Deploy CycleB to MMI
+name: Deploy CycleB to MMI (FTP Mode)
 
 on:
   push:
@@ -11,44 +11,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --- 1. BUILD DU FRONTEND (Projet Vite) ---
+      # --- 1. BUILD DU FRONTEND ---
       - name: Install Node & Build Assets
         working-directory: ./frontend
         run: |
           npm install
           npm run build
-          # On s'assure que le dossier public existe et on y injecte le build
           mkdir -p public
           cp -r dist/* public/
 
-      # --- 2. DEPLOYMENT VIA RSYNC ---
-      - name: Deploy to Server via Rsync
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: "mmi.unilim.fr"
-          REMOTE_USER: "kamara4"
-          REMOTE_PORT: 22 # <--- Vérifie si un autre port t'a été communiqué
-          TARGET: "/home/kamara4/public_html/SAE4.DWeb-DI.01/CycleB/"
-          EXCLUDE: "/node_modules/, /frontend/node_modules/, /tests/, /.git/, /.github/"
-
-      # --- 3. COMMANDES DE FINALISATION (Permissions & Cache) ---
-      - name: Post-deploy commands
-        uses: appleboy/ssh-action@master
+      # --- 2. ENVOI DES FICHIERS VIA FTP ---
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          host: "mmi.unilim.fr"
-          username: "kamara4"
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # On entre dans le dossier du projet
-            cd ~/public_html/SAE4.DWeb-DI.01/CycleB
-
-            # Installation des dépendances Symfony (si composer est présent)
-            composer install --no-dev --optimize-autoloader || echo "Composer non trouvé ou erreur"
-
-            # Nettoyage du cache Symfony (si c'est un projet Symfony)
-            php bin/console cache:clear --env=prod --no-debug || echo "Pas de console Symfony détectée"
-
-            # Sécurité et accès : On donne les droits de lecture au dossier public
-            # Ton site est dans frontend/public/ d'après ta structure
-            chmod -R 755 frontend/public/
+          server: mmi.unilim.fr
+          username: kamara4
+          # Tu dois créer ce secret avec ton MOT DE PASSE habituel du serveur MMI
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          # Chemin vers ton dossier (le FTP commence souvent à la racine de ton compte)
+          server-dir: public_html/SAE4.DWeb-DI.01/CycleB/
+          exclude: |
+            **/.git*
+            **/.github*
+            **/node_modules/**
+            **/frontend/node_modules/**
+            **/tests/**
