@@ -21,8 +21,8 @@ jobs:
           mkdir -p public
           cp -r dist/* public/
 
-      # --- 2. ENVOI DES FICHIERS VIA RSYNC ---
-      - - name: Deploy to Server via Rsync
+      # --- 2. DEPLOYMENT VIA RSYNC ---
+      - name: Deploy to Server via Rsync
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
