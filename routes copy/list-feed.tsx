@@ -157,7 +157,7 @@ export default function ListFeed() {
                 key={tweet.id}
                 tweet={tweet}
                 isOwnTweet={tweet.author?.id === userId}
-                onDeleted={() => handleTweetDeleted(Number(tweet.id))}
+                onDeleted={() => handleTweetDeleted(tweet.id)}
                 onUpdated={handleTweetUpdated}
               />
             ))}

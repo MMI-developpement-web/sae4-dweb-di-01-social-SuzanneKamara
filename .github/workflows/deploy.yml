@@ -1,0 +1,37 @@
+name: Deploy CycleB to MMI
+
+on:
+  push:
+    branches: ["CycleB"] # Se déclenche quand tu push sur la branche CycleB
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node & Build Assets
+        run: |
+          npm install
+          npm run build # Génère ton dossier public/build automatiquement
+
+      - name: Deploy to Server via Rsync
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: "mmi.unilim.fr"
+          REMOTE_USER: "kamara4"
+          TARGET: "/home/kamara4/public_html/CycleB/"
+          EXCLUDE: "/node_modules/, /tests/, /.git/, /.github/"
+
+      - name: Clear Symfony Cache
+        uses: appleboy/ssh-action@master
+        with:
+          host: "mmi.unilim.fr"
+          username: "kamara4"
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/public_html/CycleB
+            composer install --no-dev --optimize-autoloader
+            php bin/console cache:clear --env=prod

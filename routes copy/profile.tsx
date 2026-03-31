@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiEdit2, FiMapPin, FiGlobe } from 'react-icons/fi'
 import { useAuth } from '../auth/useAuth'
@@ -20,7 +20,7 @@ interface UserData {
 
 export default function Profile() {
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, token } = useAuth()
   const [userData, setUserData] = useState<UserData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [userTweets, setUserTweets] = useState<Tweet[]>([])

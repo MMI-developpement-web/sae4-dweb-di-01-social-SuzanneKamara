@@ -51,7 +51,7 @@ function PostCard({ tweet }: { tweet: Tweet }) {
             {!isAuthorBlocked && (
               <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
                 <FollowButton 
-                  targetUserId={tweet.author?.id ? Number(tweet.author.id) : 0} 
+                  targetUserId={tweet.author?.id} 
                   className='text-white hover:text-blue-300'
                 />
               </div>
@@ -81,7 +81,7 @@ function PostCard({ tweet }: { tweet: Tweet }) {
       {!isAuthorBlocked && (
         <div className='mt-[15px] mb-[8px] ml-[22px] flex items-center gap-[19px]'>
           <LikeButton 
-            tweetId={Number(tweet.id)}
+            tweetId={tweet.id} 
             initialLikeCount={tweet.likes || 0}
             displayText={false}
             className='text-[#DE6E2D] hover:text-red-500 w-[35px] h-[35px] grid place-items-center rounded-full transition-transform hover:scale-110'

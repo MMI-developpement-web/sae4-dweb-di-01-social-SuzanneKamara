@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils.ts'
 import { createTweet } from '../../lib/tweetService'
 
 interface TweetComposerProps {
-  onTweetCreated?: (newTweet: any) => void
+  onTweetCreated?: () => void
   onError?: (error: string) => void
   placeholder?: string
   maxChars?: number
@@ -43,9 +43,9 @@ export default function TweetComposer({
 
     try {
       setIsLoading(true)
-      const newTweet = await createTweet({ content: content.trim() })
+      await createTweet({ content: content.trim() })
       setContent('')
-      onTweetCreated?.(newTweet)
+      onTweetCreated?.()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create tweet.'
       setError(message)

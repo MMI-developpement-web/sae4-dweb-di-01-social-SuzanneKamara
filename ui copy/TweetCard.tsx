@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
 import { cn } from '../../lib/utils.ts'
 import Button from './Button.tsx'
@@ -164,7 +164,7 @@ export default function TweetCard({
             </button>
           </div>
           ) : !isAuthorBlocked ? (
-            tweet.author?.id && <FollowButton targetUserId={Number(tweet.author.id)} showLabel={false} />
+            tweet.author?.id && <FollowButton targetUserId={tweet.author.id} showLabel={false} />
           ) : null}
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function TweetCard({
           )}
 
           <div className='flex gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500'>
-            <LikeButton tweetId={Number(tweet.id)} initialLikeCount={tweet.likes || 0} />
+            <LikeButton tweetId={tweet.id} initialLikeCount={tweet.likes || 0} />
             <button type='button' className='hover:text-blue-500'>
               💬 Reply
             </button>

@@ -1,10 +1,10 @@
 function getLocalBackendBaseUrl() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
     const protocol = window.location.protocol || 'http:'
-    return `${protocol}//${window.location.hostname}:8080`
+    return `${protocol}//${window.location.hostname}:8081`
   }
 
-  return 'http://localhost:8080'
+  return 'http://localhost:8081'
 }
 
 const FALLBACK_SERVER_URL = getLocalBackendBaseUrl()

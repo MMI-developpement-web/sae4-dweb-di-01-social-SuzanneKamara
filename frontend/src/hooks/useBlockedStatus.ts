@@ -10,7 +10,7 @@ import { useAuth } from '../auth/useAuth'
 export function useBlockedStatus(onBlocked?: () => void) {
   const { isAuthenticated } = useAuth()
   const wasBlockedRef = useRef(false)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const checkBlockedStatus = useCallback(async () => {
     if (!isAuthenticated) {
