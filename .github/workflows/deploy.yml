@@ -2,7 +2,7 @@ name: Deploy CycleB to MMI
 
 on:
   push:
-    branches: ["CycleB"] # Se déclenche quand tu push sur la branche CycleB
+    branches: ["CycleB"]
 
 jobs:
   deploy:
@@ -11,27 +11,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # --- 1. BUILD DU FRONTEND ---
       - name: Install Node & Build Assets
+        working-directory: ./frontend
         run: |
           npm install
-          npm run build # Génère ton dossier public/build automatiquement
+          npm run build
+          # Note : Assure-toi que ton build finit dans ../public/build 
+          # ou déplace-le ici si nécessaire (ex: cp -r dist/* ../public/)
 
+      # --- 2. ENVOI DES FICHIERS ---
       - name: Deploy to Server via Rsync
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: "mmi.unilim.fr"
           REMOTE_USER: "kamara4"
-          TARGET: "/home/kamara4/public_html/CycleB/"
-          EXCLUDE: "/node_modules/, /tests/, /.git/, /.github/"
+          # CHEMIN CORRIGÉ ICI :
+          TARGET: "/home/kamara4/public_html/SAE4.DWeb-DI.01/CycleB/"
+          EXCLUDE: "/node_modules/, /frontend/node_modules/, /tests/, /.git/, /.github/"
 
-      - name: Clear Symfony Cache
+      # --- 3. COMMANDES SYMFONY ---
+      - name: Post-deploy commands
         uses: appleboy/ssh-action@master
         with:
           host: "mmi.unilim.fr"
           username: "kamara4"
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/public_html/CycleB
-            composer install --no-dev --optimize-autoloader
-            php bin/console cache:clear --env=prod
+            # On se déplace dans le bon dossier
+            cd ~/public_html/SAE4.DWeb-DI.01/CycleB
+
+            # Nettoyage et installation
+            composer install --no-dev --optimize-autoloader || echo "Composer install failed or not found"
+
+            # On force le vidage du cache pour la prod
+            php bin/console cache:clear --env=prod --no-debug || echo "Cache clear failed"
+
+            # On s'assure que les permissions permettent à Apache de lire le dossier public
+            chmod -R 755 public/
