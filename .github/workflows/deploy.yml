@@ -11,14 +11,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --- 1. BUILD DU FRONTEND ---
       - name: Install Node & Build Assets
         working-directory: ./frontend
         run: |
           npm install
           npm run build
-          # Note : Assure-toi que ton build finit dans ../public/build 
-          # ou déplace-le ici si nécessaire (ex: cp -r dist/* ../public/)
+          # Cette ligne est cruciale pour que tes fichiers JS/CSS arrivent au bon endroit
+          cp -r dist/* ../public/
 
       # --- 2. ENVOI DES FICHIERS ---
       - name: Deploy to Server via Rsync
