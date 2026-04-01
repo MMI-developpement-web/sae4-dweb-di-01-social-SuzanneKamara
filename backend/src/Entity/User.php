@@ -83,6 +83,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->tweet_id = new ArrayCollection();
         $this->liked = new ArrayCollection();
+        $this->isBlocked = false;
     }
 
     public function getId(): ?int
@@ -156,9 +157,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function eraseCredentials(): void
-    {
-    }
+    public function eraseCredentials(): void {}
 
     public function getBio(): ?string
     {
@@ -368,5 +367,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-
 }

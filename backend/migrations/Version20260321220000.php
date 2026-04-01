@@ -19,13 +19,23 @@ final class Version20260321220000 extends AbstractMigration
         $now = new \DateTime();
         $nowStr = $now->format('Y-m-d H:i:s');
 
-        // Get first user ID to create tweets
+        // First, ensure a test user exists - use a fixed approach for migrations
+        // Skip data insertion if no users exist (user will create through app)
+        
+        // Check if any users exist using executeQuery
+        $result = $this->connection->executeQuery('SELECT COUNT(*) as cnt FROM user');
+        $count = (int)$result->fetchOne();
+        
+        if ($count === 0) {
+            // No users exist, skip data seeding - app will create users through registration
+            return;
+        }
+
+        // If users exist, get the first one ID
         $userId = $this->connection->executeQuery('SELECT id FROM user LIMIT 1')->fetchOne();
         
         if ($userId === false) {
-            // Create a test user if none exists
-            $this->addSql("INSERT INTO user (username, email, password, roles, created_at) VALUES ('testuser', 'test@example.com', '\$2y\$13\$hashedpassword', 'ROLE_USER', ?)", [$nowStr]);
-            $userId = $this->connection->lastInsertId();
+            return;
         }
 
         $tweets = [
@@ -62,10 +72,9 @@ final class Version20260321220000 extends AbstractMigration
         ];
 
         foreach ($tweets as $index => $content) {
-            $timestamp = $nowStr;
             $this->addSql(
                 'INSERT INTO tweet (user_id, content, created_at) VALUES (?, ?, ?)',
-                [$userId, $content, $timestamp]
+                [$userId, $content, $nowStr]
             );
         }
     }
