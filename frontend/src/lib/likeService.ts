@@ -92,3 +92,23 @@ export async function getLikesByUserAndTweet(userId: number, tweetId: number | s
 
   return response.data
 }
+
+/**
+ * Get the total like count for a specific tweet
+ * @param tweetId - The tweet ID
+ * @returns The number of likes on the tweet
+ */
+export async function getLikeCountByTweet(tweetId: number | string): Promise<number> {
+  try {
+    const response = await apiFetchJson<LikesResponse>(
+      buildApiUrl(`${LIKES_ENDPOINT}?tweet_id=${tweetId}`),
+      {
+        method: 'GET',
+      }
+    )
+    return response.count || 0
+  } catch (err) {
+    console.error('Failed to fetch like count:', err)
+    return 0
+  }
+}

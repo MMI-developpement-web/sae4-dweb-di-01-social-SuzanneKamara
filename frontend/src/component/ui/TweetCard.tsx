@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { cn } from '../../lib/utils.ts'
-import Button from './Button.tsx'
-import LikeButton from './LikeButton.tsx'
-import FollowButton from './FollowButton.tsx'
+import Button from './atoms/Button'
+import LikeButton from './shared/LikeButton'
+import FollowButton from './shared/FollowButton'
 import type { Tweet } from '../../lib/tweetService'
 import { deleteTweet, updateTweet } from '../../lib/tweetService'
 

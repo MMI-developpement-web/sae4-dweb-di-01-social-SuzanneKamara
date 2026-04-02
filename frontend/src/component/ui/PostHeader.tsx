@@ -1,4 +1,4 @@
-import Avatar from "./Avatar";
+import Avatar from "./atoms/Avatar";
 
 interface PostHeaderProps {
   userAvatar: string;

@@ -8,6 +8,8 @@
   --ui-muted: #7a7a7a;
   --ui-accent: #ea4098;
   --ui-warm: #de6e2d;
+
+  --app-bg: linear-gradient(164.62deg, rgba(97, 189, 252, 0.3) 1.26%, rgba(89, 88, 128, 0.3) 53.34%, rgba(58, 113, 150, 0.3) 94.65%);
 }
 
 * {
@@ -26,6 +28,11 @@ body,
 body {
   font-family: 'Space Grotesk', sans-serif;
   color: var(--ui-ink);
+  background: var(--app-bg);
+}
+
+.app-background {
+  background: var(--app-bg);
 }
 
 .editorial-bg {

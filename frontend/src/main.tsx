@@ -11,7 +11,6 @@ import Feed from './routes/feed.tsx'
 import ListFeed from './routes/list-feed.tsx'
 import Tweets from './routes/tweets.jsx'
 import Users, { loader as usersLoader } from './routes/users.jsx'
-import Hashtags, { loader as hashtagsLoader } from './routes/hashtags.jsx'
 import Settings from './routes/settings.tsx'
 import Profile from './routes/profile.tsx'
 import './index.css'
@@ -57,15 +56,6 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         loader: usersLoader,
-      },
-      {
-        path: 'hashtags',
-        element: (
-          <ProtectedRoute>
-            <Hashtags />
-          </ProtectedRoute>
-        ),
-        loader: hashtagsLoader,
       },
       {
         path: 'settings',

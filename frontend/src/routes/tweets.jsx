@@ -5,8 +5,8 @@ import { fetchExploreTweetsPage } from '../lib/tweetService';
 import { useAuth } from '../auth/useAuth';
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext';
 import RefreshButton from '../component/ui/RefreshButton';
-import LikeButton from '../component/ui/LikeButton';
-import FollowButton from '../component/ui/FollowButton';
+import LikeButton from '../component/ui/shared/LikeButton';
+import FollowButton from '../component/ui/shared/FollowButton';
 
 const EXPLORE_PAGE_SIZE = 40;
 
