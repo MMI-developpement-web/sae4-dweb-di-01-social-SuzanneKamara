@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils.ts'
 import Button from './atoms/Button'
 import LikeButton from './shared/LikeButton'
 import FollowButton from './shared/FollowButton'
+import DeleteConfirmModal from './DeleteConfirmModal'
 import type { Tweet } from '../../lib/tweetService'
 import { deleteTweet, updateTweet } from '../../lib/tweetService'
 
@@ -28,6 +29,7 @@ export default function TweetCard({
   const [editContent, setEditContent] = useState(tweet.content)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleEdit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -53,9 +55,7 @@ export default function TweetCard({
   }
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this tweet?')) {
-      return
-    }
+    setShowDeleteConfirm(false)
 
     try {
       setIsLoading(true)
@@ -156,7 +156,7 @@ export default function TweetCard({
             </button>
             <button
               type='button'
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isLoading}
               className='rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50'
             >
@@ -236,6 +236,15 @@ export default function TweetCard({
       )}
 
       {error && <p className='mt-2 text-xs text-red-500'>{error}</p>}
+
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirm}
+        title="Confirmation de suppression"
+        message="Vous êtes sur le point de supprimer cette publication"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        isLoading={isLoading}
+      />
     </article>
   )
 }

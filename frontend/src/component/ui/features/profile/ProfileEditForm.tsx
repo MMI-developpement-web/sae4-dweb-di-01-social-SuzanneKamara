@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { updateUserProfile, type CurrentUser, type UpdateProfileData } from '../../../../lib/userService'
+import DeleteConfirmModal from '../../DeleteConfirmModal'
 
 interface ProfileEditFormProps {
   user: CurrentUser
@@ -22,6 +23,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Avatar URL input change
   const handleAvatarUrlChange = (value: string) => {
@@ -125,6 +127,29 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       setIsLoading(false)
     }
   }, [bio, location, website, avatarUrl, bannerUrl, avatarFile, bannerFile, avatarInputMode, bannerInputMode, user.id, onSave])
+
+  const handleDeleteAccount = useCallback(async () => {
+    setShowDeleteConfirm(false)
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // TODO: Implement account deletion API call when backend is ready
+      // const response = await fetch(`/api/users/${user.id}`, { method: 'DELETE' })
+      // if (!response.ok) throw new Error('Failed to delete account')
+      
+      setSuccessMessage('Compte en cours de suppression...')
+      // Redirect to login or home page after deletion
+      // window.location.href = '/login'
+      
+      console.log('Account deletion not yet implemented. Backend endpoint needed.')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Impossible de supprimer le compte'
+      setError(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user.id])
 
   return (
     <div className='w-full max-w-[600px] space-y-6 p-6 bg-white rounded-lg border border-gray-200'>
@@ -308,24 +333,46 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       </div>
 
       {/* Buttons */}
-      <div className='flex gap-3 pt-4'>
+      <div className='flex flex-col gap-3 pt-4'>
+        <div className='flex gap-3'>
+          <button
+            type='button'
+            onClick={handleSave}
+            disabled={isLoading}
+            className='flex-1 py-3 px-4 bg-[#ea4098] text-white rounded-lg font-semibold hover:bg-[#d63f7f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+          >
+            {isLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+          </button>
+          <button
+            type='button'
+            onClick={onCancel}
+            disabled={isLoading}
+            className='flex-1 py-3 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+          >
+            Annuler
+          </button>
+        </div>
+
+        {/* Delete Account Button */}
         <button
           type='button'
-          onClick={handleSave}
+          onClick={() => setShowDeleteConfirm(true)}
           disabled={isLoading}
-          className='flex-1 py-3 px-4 bg-[#ea4098] text-white rounded-lg font-semibold hover:bg-[#d63f7f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+          className='w-full py-3 px-4 bg-red-100 text-red-700 border border-red-300 rounded-lg font-semibold hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
         >
-          {isLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
-        </button>
-        <button
-          type='button'
-          onClick={onCancel}
-          disabled={isLoading}
-          className='flex-1 py-3 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-        >
-          Annuler
+          Supprimer le compte
         </button>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirm}
+        title="Supprimer votre compte"
+        message="Êtes-vous sûr de vouloir supprimer votre compte? Cette action est irréversible."
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setShowDeleteConfirm(false)}
+        isLoading={isLoading}
+      />
     </div>
   )
 }

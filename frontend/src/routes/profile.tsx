@@ -46,6 +46,10 @@ export default function Profile() {
     loadProfileData()
   }, [isAuthenticated, navigate])
 
+  const handleTweetDeleted = (deletedTweetId: string | number) => {
+    setUserTweets((prev) => prev.filter((t) => t.id !== deletedTweetId))
+  }
+
   if (isLoading) {
     return (
       <div className='editorial-bg min-h-screen w-full pb-[132px]'>
@@ -193,7 +197,12 @@ export default function Profile() {
                 {userTweets.length > 0 ? (
                   <div className='space-y-3'>
                     {userTweets.map((tweet) => (
-                      <TweetCard key={tweet.id} tweet={tweet} isOwnTweet={true} />
+                      <TweetCard
+                        key={tweet.id}
+                        tweet={tweet}
+                        isOwnTweet={true}
+                        onDeleted={() => handleTweetDeleted(tweet.id)}
+                      />
                     ))}
                   </div>
                 ) : (

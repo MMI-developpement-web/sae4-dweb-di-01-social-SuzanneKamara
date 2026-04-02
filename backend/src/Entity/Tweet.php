@@ -31,7 +31,7 @@ class Tweet
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'tweet')]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'tweet', cascade: ['remove'])]
     private Collection $Liked;
 
     public function __construct()
