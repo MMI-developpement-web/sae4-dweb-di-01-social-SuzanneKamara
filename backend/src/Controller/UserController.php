@@ -191,6 +191,100 @@ class UserController extends AbstractController
         return $this->json($response, 201);
     }
 
+    #[Route('/{id}', name: 'api_user_update', methods: ['PUT'])]
+    public function update(
+        ?User $user,
+        Request $request,
+        EntityManagerInterface $entityManager
+    ): JsonResponse {
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur introuvable'], 404);
+        }
+
+        // Check authentication and authorization
+        $currentUser = $this->getUser();
+        if (!$currentUser instanceof \App\Entity\User) {
+            return $this->json(['error' => 'Authentification requise'], 401);
+        }
+
+        // User can only edit their own profile
+        if ($currentUser->getId() !== $user->getId()) {
+            return $this->json(['error' => 'Vous n\'êtes pas autorisé à modifier ce profil'], 403);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!is_array($data)) {
+            return $this->json(['error' => 'JSON invalide'], 400);
+        }
+
+        $errors = [];
+
+        // Update bio if provided
+        if (isset($data['bio'])) {
+            if (!is_string($data['bio']) && $data['bio'] !== null) {
+                $errors['bio'] = 'Le champ bio doit être une chaîne de caractères';
+            } elseif (is_string($data['bio']) && mb_strlen($data['bio']) > 500) {
+                $errors['bio'] = 'La bio ne doit pas dépasser 500 caractères';
+            } else {
+                $user->setBio($data['bio'] === '' ? null : $data['bio']);
+            }
+        }
+
+        // Update location if provided
+        if (isset($data['location'])) {
+            if (!is_string($data['location']) && $data['location'] !== null) {
+                $errors['location'] = 'Le champ location doit être une chaîne de caractères';
+            } elseif (is_string($data['location']) && mb_strlen($data['location']) > 100) {
+                $errors['location'] = 'La localisation ne doit pas dépasser 100 caractères';
+            } else {
+                $user->setLocation($data['location'] === '' ? null : $data['location']);
+            }
+        }
+
+        // Update website_url if provided
+        if (isset($data['website_url'])) {
+            if (!is_string($data['website_url']) && $data['website_url'] !== null) {
+                $errors['website_url'] = 'Le champ website_url doit être une chaîne de caractères';
+            } elseif (is_string($data['website_url']) && mb_strlen($data['website_url']) > 500) {
+                $errors['website_url'] = 'L\'URL du site ne doit pas dépasser 500 caractères';
+            } else {
+                $user->setWebsiteUrl($data['website_url'] === '' ? null : $data['website_url']);
+            }
+        }
+
+        // Update avatar_url if provided
+        if (isset($data['avatar_url'])) {
+            if (!is_string($data['avatar_url']) && $data['avatar_url'] !== null) {
+                $errors['avatar_url'] = 'Le champ avatar_url doit être une chaîne de caractères';
+            } elseif (is_string($data['avatar_url']) && mb_strlen($data['avatar_url']) > 500) {
+                $errors['avatar_url'] = 'L\'URL de l\'avatar ne doit pas dépasser 500 caractères';
+            } else {
+                $user->setAvatarUrl($data['avatar_url'] === '' ? null : $data['avatar_url']);
+            }
+        }
+
+        // Update banner_url if provided
+        if (isset($data['banner_url'])) {
+            if (!is_string($data['banner_url']) && $data['banner_url'] !== null) {
+                $errors['banner_url'] = 'Le champ banner_url doit être une chaîne de caractères';
+            } elseif (is_string($data['banner_url']) && mb_strlen($data['banner_url']) > 500) {
+                $errors['banner_url'] = 'L\'URL de la bannière ne doit pas dépasser 500 caractères';
+            } else {
+                $user->setBannerUrl($data['banner_url'] === '' ? null : $data['banner_url']);
+            }
+        }
+
+        // Return validation errors if any
+        if (!empty($errors)) {
+            return $this->json(['errors' => $errors], 400);
+        }
+
+        // Persist changes
+        $entityManager->flush();
+
+        return $this->json($this->toArray($user), 200);
+    }
+
     private function toArray(User $user): array
     {
         return [

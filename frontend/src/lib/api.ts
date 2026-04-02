@@ -1,5 +1,6 @@
 import { getSessionToken } from './sessionCookie'
 
+
 export class ApiHttpError extends Error {
   status: number
 
