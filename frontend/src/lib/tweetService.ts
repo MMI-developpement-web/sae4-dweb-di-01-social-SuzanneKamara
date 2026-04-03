@@ -104,7 +104,7 @@ function toTweet(item: unknown): Tweet | null {
 
     if (mediaId && mediaType && fileUrl) {
       media.push({
-        id: mediaId,
+        id: String(mediaId),
         media_type: String(mediaType),
         file_url: String(fileUrl),
         file_size: fileSize,

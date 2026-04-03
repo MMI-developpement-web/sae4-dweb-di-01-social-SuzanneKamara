@@ -3,6 +3,7 @@ import { updateUserProfile, uploadProfileImage, type CurrentUser, type UpdatePro
 import { MESSAGES } from '../../../../constants/messages'
 import DeleteConfirmModal from '../../DeleteConfirmModal'
 import Avatar from '../../atoms/Avatar'
+import ProfileEditFormSkeleton from './ProfileEditFormSkeleton'
 
 interface ProfileEditFormProps {
   user: CurrentUser
@@ -26,6 +27,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showValidationConfirm, setShowValidationConfirm] = useState(false)
 
   // Avatar URL input change
   const handleAvatarUrlChange = (value: string) => {
@@ -106,12 +108,12 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       // Auto-hide success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null)
+        setIsLoading(false)
         onSave(updatedUser)
       }, 1500)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : MESSAGES.GENERIC_ERROR
       setError(errorMessage)
-    } finally {
       setIsLoading(false)
     }
   }, [bio, location, website, avatarUrl, bannerUrl, avatarFile, bannerFile, avatarInputMode, bannerInputMode, user.id, onSave])
@@ -140,7 +142,11 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
   }, [user.id])
 
   return (
-    <div className='w-full max-w-[600px] space-y-6 p-6 bg-white rounded-lg border border-gray-200'>
+    <>
+      {isLoading && !showValidationConfirm ? (
+        <ProfileEditFormSkeleton />
+      ) : (
+        <div className='w-full max-w-[600px] space-y-6 p-6 bg-white rounded-lg border border-gray-200'>
       {/* Success Message */}
       {successMessage && (
         <div className='p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700'>
@@ -332,7 +338,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
         <div className='flex gap-3'>
           <button
             type='button'
-            onClick={handleSave}
+            onClick={() => setShowValidationConfirm(true)}
             disabled={isLoading}
             className='flex-1 py-3 px-4 bg-[#ea4098] text-white rounded-lg font-semibold hover:bg-[#d63f7f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
           >
@@ -368,6 +374,87 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
         onCancel={() => setShowDeleteConfirm(false)}
         isLoading={isLoading}
       />
-    </div>
+
+      {/* Profile Validation Modal */}
+      {showValidationConfirm && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/35 z-40"
+            onClick={() => setShowValidationConfirm(false)}
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-white rounded-[10px] px-[20px] py-[20px] max-w-[320px] flex flex-col gap-[24px] items-start animate-in fade-in scale-95 duration-200">
+              {/* Title */}
+              <h2 className="text-[16px] font-semibold text-gray-900">
+                Confirmer les modifications
+              </h2>
+
+              {/* Changes Summary */}
+              <div className="w-full flex flex-col gap-[12px] text-sm">
+                {bio.trim() !== (user.bio ?? '') && (
+                  <div className="flex justify-between items-start pb-[8px] border-b border-gray-200">
+                    <span className="text-gray-600">Bio :</span>
+                    <span className="text-right text-gray-900 font-medium max-w-[150px] line-clamp-2">{bio.trim() || '(vide)'}</span>
+                  </div>
+                )}
+                {location.trim() !== (user.location ?? '') && (
+                  <div className="flex justify-between items-start pb-[8px] border-b border-gray-200">
+                    <span className="text-gray-600">Localisation :</span>
+                    <span className="text-right text-gray-900 font-medium">{location.trim() || '(vide)'}</span>
+                  </div>
+                )}
+                {website.trim() !== (user.website_url ?? '') && (
+                  <div className="flex justify-between items-start pb-[8px] border-b border-gray-200">
+                    <span className="text-gray-600">Site web :</span>
+                    <span className="text-right text-gray-900 font-medium max-w-[150px] truncate">{website.trim() || '(vide)'}</span>
+                  </div>
+                )}
+                {avatarUrl.trim() !== (user.avatar_url ?? '') || avatarFile !== null && (
+                  <div className="flex justify-between items-start pb-[8px] border-b border-gray-200">
+                    <span className="text-gray-600">Photo de profil :</span>
+                    <span className="text-right text-gray-900 font-medium">{avatarFile ? 'Nouveau fichier' : 'Nouvelle URL'}</span>
+                  </div>
+                )}
+                {bannerUrl.trim() !== (user.banner_url ?? '') || bannerFile !== null && (
+                  <div className="flex justify-between items-start pb-[8px] border-b border-gray-200">
+                    <span className="text-gray-600">Bannière :</span>
+                    <span className="text-right text-gray-900 font-medium">{bannerFile ? 'Nouveau fichier' : 'Nouvelle URL'}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-[12px] w-full justify-end pt-[8px]">
+                {/* Cancel Button */}
+                <button
+                  onClick={() => setShowValidationConfirm(false)}
+                  disabled={isLoading}
+                  className="px-[16px] py-[8px] rounded-[6px] bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 text-[12px] font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+
+                {/* Confirm Button */}
+                <button
+                  onClick={async () => {
+                    setShowValidationConfirm(false)
+                    await handleSave()
+                  }}
+                  disabled={isLoading}
+                  className="px-[16px] py-[8px] rounded-[6px] bg-[#ea4098] hover:bg-[#d63a80] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[12px] font-medium transition-colors"
+                >
+                  {isLoading ? 'Enregistrement...' : 'Confirmer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      </div>
+    )}
+    </>
   )
 }

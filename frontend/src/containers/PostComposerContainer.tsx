@@ -5,7 +5,6 @@
 
 import { useState } from 'react'
 import { useAuth, usePosts } from '@/store'
-import { MESSAGES } from '@/constants/messages'
 import PostComposer from '@/component/ui/features/post/PostComposer'
 
 interface PostComposerContainerProps {
@@ -23,12 +22,13 @@ export default function PostComposerContainer({ onPostCreated }: PostComposerCon
     return <div className="p-4 text-center text-gray-500">Connectez-vous pour créer un post</div>
   }
 
-  const handleCreatePost = async () => {
-    if (!content.trim()) return
+  const handleCreatePost = async (submittedContent?: string) => {
+    const contentToUse = submittedContent || content
+    if (!contentToUse.trim()) return
 
     try {
       await createPost({
-        content,
+        content: contentToUse,
         hashtags,
       })
       setContent('')
@@ -51,7 +51,7 @@ export default function PostComposerContainer({ onPostCreated }: PostComposerCon
       onContentChange={setContent}
       hashtags={hashtags}
       onAddHashtag={handleAddHashtag}
-      onRemoveHashtag={(tag) => setHashtags(hashtags.filter((h) => h !== tag))}
+      onRemoveHashtag={(tag: string) => setHashtags(hashtags.filter((h) => h !== tag))}
       onSubmit={handleCreatePost}
       isLoading={isLoading}
       error={error}

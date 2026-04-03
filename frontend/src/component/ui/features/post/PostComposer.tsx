@@ -1,4 +1,4 @@
-import { cn } from '../../../lib/utils.ts'
+import { cn } from '../../../../lib/utils.ts'
 import PostCounter from './PostCounter'
 import Button from '../../atoms/Button'
 
@@ -8,6 +8,14 @@ interface PostComposerProps {
   onSubmit?: (content: string) => void | Promise<void>
   isLoading?: boolean
   className?: string
+  content?: string
+  onContentChange?: (content: string) => void
+  hashtags?: string[]
+  onAddHashtag?: (tag: string) => void
+  onRemoveHashtag?: (tag: string) => void
+  error?: string | null
+  author?: any
+  displayText?: boolean
 }
 
 export default function PostComposer({
@@ -16,6 +24,15 @@ export default function PostComposer({
   onSubmit,
   isLoading = false,
   className,
+  // Autres props acceptées mais non utilisées dans ce composant
+  content: _content,
+  onContentChange: _onContentChange,
+  hashtags: _hashtags,
+  onAddHashtag: _onAddHashtag,
+  onRemoveHashtag: _onRemoveHashtag,
+  error: _error,
+  author: _author,
+  displayText: _displayText,
 }: PostComposerProps) {
   const handleSubmit = (formData: FormData) => {
     const content = formData.get('content') as string

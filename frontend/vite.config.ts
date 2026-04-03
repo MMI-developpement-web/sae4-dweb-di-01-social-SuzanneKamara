@@ -14,6 +14,18 @@ export default defineConfig({
   preview: {
     port: 4173,
     strictPort: false,
+    proxy: {
+      '/files': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   server: {
     port: 5173,
@@ -22,6 +34,11 @@ export default defineConfig({
     origin: "http://localhost:8090",
     allowedHosts: ["sae-frontend"],
     proxy: {
+      '/files': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,

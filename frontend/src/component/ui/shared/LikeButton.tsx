@@ -58,7 +58,7 @@ export default function LikeButton({
   }, [tweetId, currentUserId])
 
   const generateParticles = () => {
-    const newParticles = Array.from({ length: 5 }).map((_, i) => ({
+    const newParticles = Array.from({ length: 5 }).map((_, _i) => ({
       id: Math.random(),
       x: (Math.random() - 0.5) * 60,
       y: Math.random() * -60,

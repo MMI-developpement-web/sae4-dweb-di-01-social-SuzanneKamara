@@ -1,4 +1,4 @@
-import { cn } from '../../../lib/utils.ts'
+import { cn } from '../../../../lib/utils.ts'
 
 interface PostCounterProps {
   charCount?: number
@@ -13,8 +13,6 @@ export default function PostCounter({
   isOverLimit = false,
   isNearLimit = false,
 }: PostCounterProps) {
-  const remainingChars = maxChars - charCount
-
   return (
     <div className='text-xs font-medium absolute bottom-2 right-4'>
       <span

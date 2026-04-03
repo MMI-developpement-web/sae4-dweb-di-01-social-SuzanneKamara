@@ -1,4 +1,4 @@
-import { cn } from '../../../lib/utils.ts'
+import { cn } from '../../../../lib/utils.ts'
 import TweetHeader from './TweetHeader'
 import TweetContent from './TweetContent'
 import TweetFooter from './TweetFooter'

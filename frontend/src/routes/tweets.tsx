@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { FiCompass, FiHome, FiMessageSquare, FiPlus, FiRepeat, FiX } from 'react-icons/fi';
-import { fetchExploreTweetsPage, deleteTweet, updateTweet } from '../lib/tweetService';
-import { getCurrentUser } from '../lib/userService';
+import { fetchExploreTweetsPage, deleteTweet, updateTweet, type Tweet } from '../lib/tweetService';
+import { getCurrentUser, type CurrentUser } from '../lib/userService';
 import { useAuth } from '../auth/useAuth';
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext';
 import RefreshButton from '../component/ui/RefreshButton';
@@ -13,7 +13,7 @@ import MediaCarousel from '../component/ui/features/tweet/MediaCarousel';
 
 const EXPLORE_PAGE_SIZE = 40;
 
-function extractHashtagNames(tweet) {
+function extractHashtagNames(tweet: Tweet): string[] {
   if (tweet.hashtags && tweet.hashtags.length > 0) {
     return tweet.hashtags.map((tag) => `#${tag.name}`);
   }
@@ -22,7 +22,12 @@ function extractHashtagNames(tweet) {
   return matches ?? [];
 }
 
-function LargeTweetOverlay({ tweet, onClose }) {
+interface LargeTweetOverlayProps {
+  tweet: Tweet;
+  onClose: () => void;
+}
+
+function LargeTweetOverlay({ tweet, onClose }: LargeTweetOverlayProps) {
   const isAuthorBlocked = tweet.author?.is_blocked === true;
   const hashtags = extractHashtagNames(tweet);
   const createdAt = tweet.createdAt
@@ -87,7 +92,7 @@ function LargeTweetOverlay({ tweet, onClose }) {
                 {!isAuthorBlocked && (
                   <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
                     <FollowButton 
-                      targetUserId={tweet.author?.id} 
+                      targetUserId={Number(tweet.author?.id)} 
                       className='text-white hover:text-blue-300'
                     />
                   </div>
@@ -123,7 +128,7 @@ function LargeTweetOverlay({ tweet, onClose }) {
             <div className='mt-[15px] mb-[8px] ml-[22px] flex items-center gap-[19px]'>
               <div onClick={(e) => e.stopPropagation()}>
                 <LikeButton 
-            tweetId={tweet.id} 
+            tweetId={Number(tweet.id)} 
             initialLikeCount={tweet.likes || 0}
             displayText={false}
             className='text-[#DE6E2D] hover:text-red-500 w-[35px] h-[35px] grid place-items-center rounded-full transition-transform hover:scale-110'
@@ -144,22 +149,22 @@ function LargeTweetOverlay({ tweet, onClose }) {
 }
 
 export default function Tweets() {
-  const [tweets, setTweets] = useState([]);
+  const [tweets, setTweets] = useState<Tweet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
-  const [error, setError] = useState(null);
-  const [selectedTweet, setSelectedTweet] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTweet, setSelectedTweet] = useState<Tweet | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [editingTweetId, setEditingTweetId] = useState(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [editingTweetId, setEditingTweetId] = useState<string | number | null>(null);
   const [editingContent, setEditingContent] = useState('');
 
-  const sentinelRef = useRef(null);
-  const prefetchedPageRef = useRef(null);
-  const prefetchedOffsetRef = useRef(null);
-  const prefetchPromiseRef = useRef(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const prefetchedPageRef = useRef<any>(null);
+  const prefetchedOffsetRef = useRef<number | null>(null);
+  const prefetchPromiseRef = useRef<Promise<void> | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -181,7 +186,7 @@ export default function Tweets() {
     loadCurrentUser();
   }, [isAuthenticated]);
 
-  const appendUniqueTweets = useCallback((incoming) => {
+  const appendUniqueTweets = useCallback((incoming: Tweet[]) => {
     setTweets((previous) => {
       const next = [...previous];
       const existingIds = new Set(previous.map((tweet) => String(tweet.id)));
@@ -198,7 +203,7 @@ export default function Tweets() {
     });
   }, []);
 
-  const prefetchPage = useCallback(async (targetOffset) => {
+  const prefetchPage = useCallback(async (targetOffset: number) => {
     if (prefetchPromiseRef.current) {
       return;
     }
@@ -291,7 +296,7 @@ export default function Tweets() {
     }
   }, [appendUniqueTweets, hasMore, isFetchingMore, isLoading, offset, prefetchPage]);
 
-  const handleDeleteTweet = async (tweetId) => {
+  const handleDeleteTweet = async (tweetId: string | number) => {
     if (!window.confirm('Confirmer la suppression du tweet?')) return;
     try {
       await deleteTweet(tweetId);
@@ -303,7 +308,7 @@ export default function Tweets() {
     }
   };
 
-  const handleEditTweet = async (tweetId) => {
+  const handleEditTweet = async (tweetId: string | number) => {
     if (!editingContent.trim()) {
       setError('Le tweet ne peut pas être vide.');
       return;
@@ -362,7 +367,7 @@ export default function Tweets() {
       return;
     }
 
-    const onEscape = (event) => {
+    const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setSelectedTweet(null);
       }

@@ -1,5 +1,4 @@
-import { cn } from '../../../lib/utils.ts'
-import PP from '../../atoms/PP'
+import { cn } from '../../../../lib/utils.ts'
 
 interface ProfileBannerProps {
   backgroundImage?: string

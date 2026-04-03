@@ -1,8 +1,8 @@
-import { cn } from '../../../lib/utils.ts'
+import { cn } from '../../../../lib/utils.ts'
 import Avatar from '../../atoms/Avatar'
 import Username from '../../atoms/Username'
 import FollowButton from '../../shared/FollowButton'
-import { useAuth } from '../../../auth/useAuth.ts'
+import { useAuth } from '../../../../auth/useAuth.ts'
 
 interface TweetHeaderProps {
   username?: string

@@ -1,6 +1,11 @@
-import { cn } from '../../../lib/utils.ts'
+import { cn } from '../../../../lib/utils.ts'
 
-export default function Post({ className }: { className?: string }) {
+interface PostProps {
+  className?: string
+  post?: any
+}
+
+export default function Post({ className }: PostProps) {
   return (
     <div
       className={cn(

@@ -1,4 +1,4 @@
-import { cn } from '../../../lib/utils.ts'
+import { cn } from '../../../../lib/utils.ts'
 import LikeButton from '../../shared/LikeButton'
 import RepublicationButton from '../../shared/RepublicationButton'
 import CommentButton from '../../shared/CommentButton'
@@ -19,8 +19,8 @@ export default function TweetFooter({
   likesCount = 0,
   commentsCount = 0,
   repostsCount = 0,
-  onDelete,
-  onUpdate,
+  onDelete: _onDelete,
+  onUpdate: _onUpdate,
   onReply,
   className,
 }: TweetFooterProps) {

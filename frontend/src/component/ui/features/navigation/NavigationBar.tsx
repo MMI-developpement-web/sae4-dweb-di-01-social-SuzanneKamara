@@ -1,4 +1,4 @@
-import { cn } from '../../../lib/utils.ts'
+import { cn } from '../../../../lib/utils.ts'
 
 export default function NavigationBar({ className }: { className?: string }) {
   return (
