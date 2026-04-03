@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { FiCompass, FiHome, FiMessageSquare, FiPlus, FiRepeat, FiX } from 'react-icons/fi';
-import { fetchExploreTweetsPage } from '../lib/tweetService';
+import { fetchExploreTweetsPage, deleteTweet, updateTweet } from '../lib/tweetService';
+import { getCurrentUser } from '../lib/userService';
 import { useAuth } from '../auth/useAuth';
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext';
 import RefreshButton from '../component/ui/RefreshButton';
 import LikeButton from '../component/ui/shared/LikeButton';
 import FollowButton from '../component/ui/shared/FollowButton';
+import MediaCarousel from '../component/ui/features/tweet/MediaCarousel';
 
 const EXPLORE_PAGE_SIZE = 40;
 
@@ -87,8 +89,13 @@ function LargeTweetOverlay({ tweet, onClose }) {
                   {hashtags.length > 0 ? hashtags.join(' ') : '#post #contenu'}
                 </p>
 
-                <div className='flex-1 overflow-auto whitespace-pre-line text-[34px] leading-[42px] text-[#111]'>
-                  {tweet.content}
+                <div className='flex-1 overflow-auto flex flex-col gap-4'>
+                  {tweet.media && tweet.media.length > 0 && (
+                    <MediaCarousel media={tweet.media} className='max-h-[250px] rounded-[8px]' />
+                  )}
+                  <p className='whitespace-pre-line text-[34px] leading-[42px] text-[#111]'>
+                    {tweet.content}
+                  </p>
                 </div>
               </div>
             )}
@@ -127,6 +134,9 @@ export default function Tweets() {
   const [error, setError] = useState(null);
   const [selectedTweet, setSelectedTweet] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [editingTweetId, setEditingTweetId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
 
   const sentinelRef = useRef(null);
   const prefetchedPageRef = useRef(null);
@@ -138,6 +148,20 @@ export default function Tweets() {
   const { isAuthenticated } = useAuth();
   const isExploreActive = location.pathname.startsWith('/tweets');
   const isHomeActive = location.pathname.startsWith('/feed');
+
+  // Load current user
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const loadCurrentUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch {
+        // Silently fail - current user loading is not critical
+      }
+    };
+    loadCurrentUser();
+  }, [isAuthenticated]);
 
   const shuffleArray = useCallback((array) => {
     const shuffled = [...array];
@@ -258,6 +282,37 @@ export default function Tweets() {
     }
   }, [appendUniqueTweets, hasMore, isFetchingMore, isLoading, offset, prefetchPage]);
 
+  const handleDeleteTweet = async (tweetId) => {
+    if (!window.confirm('Confirmer la suppression du tweet?')) return;
+    try {
+      await deleteTweet(tweetId);
+      setTweets((prev) => prev.filter((t) => t.id !== tweetId));
+      setSelectedTweet(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Impossible de supprimer le tweet.';
+      setError(message);
+    }
+  };
+
+  const handleEditTweet = async (tweetId) => {
+    if (!editingContent.trim()) {
+      setError('Le tweet ne peut pas être vide.');
+      return;
+    }
+    try {
+      const updated = await updateTweet(tweetId, { content: editingContent.trim() });
+      setTweets((prev) =>
+        prev.map((t) => (t.id === tweetId ? updated : t))
+      );
+      setEditingTweetId(null);
+      setEditingContent('');
+      setSelectedTweet(updated);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Impossible de modifier le tweet.';
+      setError(message);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       return;
@@ -359,10 +414,14 @@ export default function Tweets() {
           ) : (
             tweets.map((tweet) => {
               const isAuthorBlocked = tweet.author?.is_blocked === true;
+              const isOwnTweet = currentUser && Number(currentUser.id) === Number(tweet.author?.id);
+              const isEditing = editingTweetId === tweet.id;
               
               // Calculate height based on content length (roughly 35px per line)
               const estimatedLines = Math.ceil(tweet.content.length / 35);
-              const minHeight = Math.max(150, estimatedLines * 35 + 80);
+              const hasMedia = tweet.media && tweet.media.length > 0;
+              const mediaHeight = hasMedia ? 180 : 0;  // ~180px for media carousel
+              const minHeight = Math.max(200, estimatedLines * 35 + 80 + mediaHeight);
 
               const createdAt = tweet.createdAt
                 ? new Date(tweet.createdAt).toLocaleDateString('fr-FR', {
@@ -371,6 +430,46 @@ export default function Tweets() {
                     day: '2-digit',
                   })
                 : 'Date inconnue';
+
+              if (isEditing) {
+                return (
+                  <form
+                    key={tweet.id}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleEditTweet(tweet.id);
+                    }}
+                    className='ui-surface mb-[10px] rounded-[12px] p-4'
+                    style={{ breakInside: 'avoid' }}
+                  >
+                    <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      maxLength={500}
+                      className='w-full resize-none rounded-md border border-gray-300 bg-white p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                      rows={4}
+                    />
+                    <div className='mt-3 flex gap-2'>
+                      <button
+                        type='submit'
+                        className='rounded-md bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700'
+                      >
+                        Save
+                      </button>
+                      <button
+                        type='button'
+                        className='rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50'
+                        onClick={() => {
+                          setEditingTweetId(null);
+                          setEditingContent('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                );
+              }
 
               return (
                 <article
@@ -399,6 +498,31 @@ export default function Tweets() {
                       <p className='ui-kicker text-[9px] text-[#8d8d8d] truncate'>@{tweet.author?.username || 'username'}</p>
                       <p className='ui-kicker mt-1 text-[9px] text-[#8d8d8d]'>{createdAt}</p>
                     </div>
+                    {isOwnTweet && (
+                      <div className='absolute top-2 right-2 flex gap-1 z-10'>
+                        <button
+                          type='button'
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingTweetId(tweet.id);
+                            setEditingContent(tweet.content);
+                          }}
+                          className='rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-50'
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type='button'
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTweet(tweet.id);
+                          }}
+                          className='rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50'
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                     {isAuthorBlocked ? (
                       <div className='absolute inset-0 flex items-center justify-center bg-yellow-50/95 rounded-[12px]'>
                         <div className='text-center px-3'>
@@ -408,9 +532,14 @@ export default function Tweets() {
                         </div>
                       </div>
                     ) : (
-                      <p className='mt-4 text-[14px] leading-[18px] text-[#222] line-clamp-none'>
-                        {tweet.content}
-                      </p>
+                      <div className='mt-4 flex-1 flex flex-col gap-3'>
+                        {tweet.media && tweet.media.length > 0 && (
+                          <MediaCarousel media={tweet.media} className='rounded-[8px] max-h-[200px]' />
+                        )}
+                        <p className='text-[14px] leading-[18px] text-[#222] line-clamp-none'>
+                          {tweet.content}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </article>

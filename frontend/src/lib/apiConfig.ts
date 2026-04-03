@@ -12,6 +12,7 @@ const FALLBACK_SERVER_URL = getLocalBackendBaseUrl()
 const configuredBaseUrl =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   (import.meta.env.VITE_SERVER_URL as string | undefined) ??
+  (import.meta.env.VITE_BACKEND_URL as string | undefined) ??
   FALLBACK_SERVER_URL
 
 function removeTrailingSlash(url: string) {

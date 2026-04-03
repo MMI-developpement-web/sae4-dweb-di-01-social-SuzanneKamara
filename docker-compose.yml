@@ -1,5 +1,4 @@
 services:
-
   sae-nginx:
     image: nginx:latest
     ports:
@@ -11,7 +10,7 @@ services:
       - ./frontend:/app/frontend
 
   sae-frontend:
-    build: 
+    build:
       context: .
       dockerfile: ./docker/frontend/Dockerfile
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
@@ -31,6 +30,7 @@ services:
       - "9000:9000"
     volumes:
       - ./backend:/app/backend
+      - ./frontend/public:/app/frontend/public
 
   sae-mysql:
     image: mysql:8
@@ -40,7 +40,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: "SAE4_DWeb_DI_01"
-  
+
   sae-phpmyadmin:
     image: phpmyadmin/phpmyadmin
     environment:

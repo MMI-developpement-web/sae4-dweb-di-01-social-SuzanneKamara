@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
-import { updateUserProfile, type CurrentUser, type UpdateProfileData } from '../../../../lib/userService'
+import { updateUserProfile, uploadProfileImage, type CurrentUser, type UpdateProfileData } from '../../../../lib/userService'
 import DeleteConfirmModal from '../../DeleteConfirmModal'
+import Avatar from '../../atoms/Avatar'
 
 interface ProfileEditFormProps {
   user: CurrentUser
@@ -85,31 +86,17 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       if (avatarInputMode === 'url') {
         updateData.avatar_url = avatarUrl.trim() === '' ? null : avatarUrl.trim()
       } else if (avatarFile) {
-        // For file uploads, we'll use data URL directly for now
-        // In production, you'd upload to a CDN and get a URL back
-        const reader = new FileReader()
-        await new Promise((resolve) => {
-          reader.onloadend = () => {
-            updateData.avatar_url = reader.result as string
-            resolve(null)
-          }
-          reader.readAsDataURL(avatarFile)
-        })
+        // Upload the file to the media endpoint and get the URL back
+        const uploadedUrl = await uploadProfileImage(avatarFile)
+        updateData.avatar_url = uploadedUrl
       }
 
       if (bannerInputMode === 'url') {
         updateData.banner_url = bannerUrl.trim() === '' ? null : bannerUrl.trim()
       } else if (bannerFile) {
-        // For file uploads, we'll use data URL directly for now
-        // In production, you'd upload to a CDN and get a URL back
-        const reader = new FileReader()
-        await new Promise((resolve) => {
-          reader.onloadend = () => {
-            updateData.banner_url = reader.result as string
-            resolve(null)
-          }
-          reader.readAsDataURL(bannerFile)
-        })
+        // Upload the file to the media endpoint and get the URL back
+        const uploadedUrl = await uploadProfileImage(bannerFile)
+        updateData.banner_url = uploadedUrl
       }
 
       const updatedUser = await updateUserProfile(user.id, updateData)
@@ -224,11 +211,18 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       <div>
         <label className='block text-sm font-semibold text-gray-700 mb-2'>Photo de profil</label>
         
-        {avatarPreview && (
-          <div className='mb-3'>
+        <div className='mb-3'>
+          {avatarPreview ? (
             <img src={avatarPreview} alt='Avatar aperçu' className='w-[100px] h-[100px] rounded-full object-cover border-2 border-gray-200' />
-          </div>
-        )}
+          ) : (
+            <Avatar
+              url={undefined}
+              username={user.username}
+              size='lg'
+              className='border-2 border-gray-200'
+            />
+          )}
+        </div>
 
         <div className='flex gap-2 mb-3'>
           <button

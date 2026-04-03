@@ -6,6 +6,7 @@ import { getCurrentUser, type CurrentUser } from '../lib/userService'
 import { fetchUserTweetsPage, type Tweet } from '../lib/tweetService'
 import TweetCard from '../component/ui/TweetCard'
 import ProfileEditForm from '../component/ui/features/profile/ProfileEditForm'
+import Avatar from '../component/ui/atoms/Avatar'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -131,17 +132,11 @@ export default function Profile() {
                 {/* User Header */}
                 <div className='flex items-start gap-3 pb-3 border-b border-gray-200'>
                   <div className='relative shrink-0'>
-                    {userData?.avatar_url ? (
-                      <img
-                        src={userData.avatar_url}
-                        alt={userData.username}
-                        className='size-[60px] rounded-full object-cover'
-                      />
-                    ) : (
-                      <div className='size-[60px] rounded-full bg-[#939292] flex items-center justify-center text-white text-2xl font-bold'>
-                        {userData?.username?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                    )}
+                    <Avatar
+                      url={userData?.avatar_url}
+                      username={userData?.username || 'User'}
+                      size='xl'
+                    />
                   </div>
                   <div className='flex-1 flex items-start justify-between'>
                     <div>

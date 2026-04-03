@@ -1,4 +1,5 @@
 import { cn } from '../../../lib/utils.ts'
+import Avatar from '../../atoms/Avatar'
 
 interface TweetMignatureProps {
   username: string
@@ -28,13 +29,11 @@ export default function TweetMignature({
         className
       )}
     >
-      {avatar && (
-        <img
-          src={avatar}
-          alt={username}
-          className='w-10 h-10 rounded-full object-cover flex-shrink-0'
-        />
-      )}
+      <Avatar
+        url={avatar}
+        username={username}
+        size='sm'
+      />
 
       <div className='flex-1 min-w-0'>
         <div className='flex items-baseline gap-2'>

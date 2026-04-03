@@ -2,9 +2,11 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { cn } from '../../lib/utils.ts'
 import Button from './atoms/Button'
+import Avatar from './atoms/Avatar'
 import LikeButton from './shared/LikeButton'
 import FollowButton from './shared/FollowButton'
 import DeleteConfirmModal from './DeleteConfirmModal'
+import MediaCarousel from './features/tweet/MediaCarousel'
 import type { Tweet } from '../../lib/tweetService'
 import { deleteTweet, updateTweet } from '../../lib/tweetService'
 
@@ -137,35 +139,45 @@ export default function TweetCard({
         className
       )}
     >
-      <div className='mb-3 flex items-start justify-between gap-2'>
-        <div className='min-w-0 flex-1 max-w-[70%]'>
-          <p className='text-sm font-semibold text-gray-900 truncate'>@{tweet.author?.username || 'unknown'}</p>
-          <p className='text-xs text-gray-500'>{createdAt}</p>
-        </div>
-
+      <div className='mb-3 flex items-start gap-3'>
         <div className='flex-shrink-0'>
-          {!isAuthorBlocked && isOwnTweet ? (
-            <div className='flex gap-2'>
+          <Avatar
+            url={tweet.author?.avatar_url}
+            username={tweet.author?.username || 'unknown'}
+            size='md'
+          />
+        </div>
+        
+        <div className='flex-1 flex items-start justify-between gap-2 min-w-0'>
+          <div className='min-w-0 flex-1'>
+            <p className='text-sm font-semibold text-gray-900 truncate'>@{tweet.author?.username || 'unknown'}</p>
+            <p className='text-xs text-gray-500'>{createdAt}</p>
+          </div>
+
+          <div className='flex-shrink-0'>
+            {!isAuthorBlocked && isOwnTweet ? (
+              <div className='flex gap-2'>
+                <button
+                  type='button'
+                  onClick={() => setIsEditing(true)}
+                disabled={isLoading}
+                className='rounded-md px-2 py-1 text-xs text-blue-600 hover:bg-blue-50'
+              >
+                Edit
+              </button>
               <button
                 type='button'
-                onClick={() => setIsEditing(true)}
-              disabled={isLoading}
-              className='rounded-md px-2 py-1 text-xs text-blue-600 hover:bg-blue-50'
-            >
-              Edit
-            </button>
-            <button
-              type='button'
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={isLoading}
-              className='rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50'
-            >
-              Delete
-            </button>
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isLoading}
+                className='rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50'
+              >
+                Delete
+              </button>
+            </div>
+            ) : !isAuthorBlocked ? (
+              tweet.author?.id && <FollowButton targetUserId={Number(tweet.author.id)} showLabel={false} />
+            ) : null}
           </div>
-          ) : !isAuthorBlocked ? (
-            tweet.author?.id && <FollowButton targetUserId={Number(tweet.author.id)} showLabel={false} />
-          ) : null}
         </div>
       </div>
 
@@ -211,10 +223,8 @@ export default function TweetCard({
         </div>
       ) : (
         <>
-          <p className='mb-3 text-sm text-gray-700 leading-relaxed'>{tweet.content}</p>
-
           {tweet.hashtags && tweet.hashtags.length > 0 && (
-            <div className='mb-3 flex flex-wrap gap-2'>
+            <div className='mb-4 flex flex-wrap gap-2'>
               {tweet.hashtags.map((tag) => (
                 <span key={tag.id} className='text-xs text-blue-600 hover:underline cursor-pointer'>
                   #{tag.name}
@@ -223,12 +233,20 @@ export default function TweetCard({
             </div>
           )}
 
-          <div className='flex gap-4 border-t border-gray-100 pt-3 text-xs text-gray-500'>
+          {tweet.media && tweet.media.length > 0 && (
+            <div className='mb-4 -mx-4 -mb-4'>
+              <MediaCarousel media={tweet.media} className='rounded-none' />
+            </div>
+          )}
+
+          <p className='mb-4 text-sm text-gray-900 leading-relaxed whitespace-pre-wrap'>{tweet.content}</p>
+
+          <div className='flex gap-6 border-t border-gray-100 pt-3 text-sm text-gray-500'>
             <LikeButton tweetId={Number(tweet.id)} initialLikeCount={tweet.likes || 0} />
-            <button type='button' className='hover:text-blue-500'>
+            <button type='button' className='hover:text-blue-500 transition-colors'>
               💬 Reply
             </button>
-            <button type='button' className='hover:text-green-500'>
+            <button type='button' className='hover:text-green-500 transition-colors'>
               ↻ Retweet
             </button>
           </div>

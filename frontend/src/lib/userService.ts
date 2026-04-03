@@ -37,6 +37,30 @@ export async function getCurrentUser(): Promise<CurrentUser> {
 }
 
 /**
+ * Upload a profile image (avatar or banner) to the media endpoint
+ * @param file The image file to upload
+ * @returns The file URL returned by the media endpoint
+ * @throws Error if upload fails
+ */
+export async function uploadProfileImage(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await apiFetch(buildApiUrl('/api/media'), {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error ?? 'Erreur lors du téléchargement de l\'image')
+  }
+
+  const data = await response.json()
+  return data.file_url
+}
+
+/**
  * Update the current user's profile
  * @param userId The user ID to update
  * @param data Partial user data to update

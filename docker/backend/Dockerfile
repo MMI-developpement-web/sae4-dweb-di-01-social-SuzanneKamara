@@ -22,5 +22,9 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Copy php.ini file
 COPY docker/backend/php.ini /usr/local/etc/php/conf.d/app.ini
 
+# Ensure uploads directory exists with correct permissions
+RUN mkdir -p /app/frontend/public/uploads && \
+    chmod 777 /app/frontend/public/uploads
+
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000

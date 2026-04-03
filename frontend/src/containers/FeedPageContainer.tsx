@@ -5,11 +5,14 @@ import TweetComposer from '../component/ui/TweetComposer'
 import RefreshButton from '../component/ui/RefreshButton'
 import FollowButton from '../component/ui/shared/FollowButton'
 import LikeButton from '../component/ui/shared/LikeButton'
+import MediaCarousel from '../component/ui/features/tweet/MediaCarousel'
 import BottomNav from '../component/ui/features/navigation/BottomNav'
 import { useAuth } from '../auth/useAuth'
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext'
 import type { FollowingTweetsPage, Tweet } from '../lib/tweetService'
-import { fetchFollowingTweetsPage } from '../lib/tweetService'
+import { fetchFollowingTweetsPage, deleteTweet, updateTweet } from '../lib/tweetService'
+import { getCurrentUser } from '../lib/userService'
+import type { CurrentUser } from '../lib/userService'
 
 const FEED_PAGE_SIZE = 40
 
@@ -22,9 +25,11 @@ function extractHashtagNames(tweet: Tweet): string[] {
   return matches ?? []
 }
 
-function PostCard({ tweet }: { tweet: Tweet }) {
+function PostCard({ tweet, currentUser, onEdit, onDelete, editingTweetId, editingContent, onEditingChange }: { tweet: Tweet; currentUser: CurrentUser | null; onEdit: (id: string | number, content: string) => Promise<void>; onDelete: (id: string | number) => Promise<void>; editingTweetId: string | number | null; editingContent: string; onEditingChange: (id: string | number | null, content: string) => void }) {
   const isAuthorBlocked = tweet.author?.is_blocked === true
   const hashtags = extractHashtagNames(tweet)
+  const isOwnTweet = currentUser && Number(currentUser.id) === Number(tweet.author?.id)
+  const isEditing = editingTweetId === tweet.id
   const createdAt = tweet.createdAt
     ? new Date(tweet.createdAt).toLocaleDateString('fr-FR', {
         year: 'numeric',
@@ -34,6 +39,43 @@ function PostCard({ tweet }: { tweet: Tweet }) {
         minute: '2-digit',
       })
     : 'Date inconnue'
+
+  if (isEditing) {
+    return (
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault()
+          if (!editingContent.trim()) return
+          await onEdit(tweet.id, editingContent)
+          onEditingChange(null, '')
+        }}
+        className='ui-surface relative h-auto w-[325px] rounded-[12px] p-4 mb-[28px]'
+      >
+        <textarea
+          value={editingContent}
+          onChange={(e) => onEditingChange(tweet.id, e.target.value)}
+          maxLength={500}
+          className='w-full resize-none rounded-md border border-gray-300 bg-white p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+          rows={4}
+        />
+        <div className='mt-3 flex gap-2'>
+          <button
+            type='submit'
+            className='rounded-md bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700'
+          >
+            Save
+          </button>
+          <button
+            type='button'
+            className='rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50'
+            onClick={() => onEditingChange(null, '')}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    )
+  }
 
   return (
     <div className='relative mb-[28px] w-[333px]'>
@@ -48,8 +90,31 @@ function PostCard({ tweet }: { tweet: Tweet }) {
           </div>
 
           <div className='relative flex-shrink-0'>
-            <div className='size-[51px] rounded-full bg-[#D3D3D3]' />
-            {!isAuthorBlocked && (
+            {isOwnTweet ? (
+              <div className='flex gap-1'>
+                <button
+                  type='button'
+                  onClick={() => onEditingChange(tweet.id, tweet.content)}
+                  className='rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-50'
+                >
+                  Edit
+                </button>
+                <button
+                  type='button'
+                  onClick={() => {
+                    if (window.confirm('Confirmer la suppression du tweet?')) {
+                      onDelete(tweet.id);
+                    }
+                  }}
+                  className='rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50'
+                >
+                  Delete
+                </button>
+              </div>
+            ) : (
+              <div className='size-[51px] rounded-full bg-[#D3D3D3]' />
+            )}
+            {!isOwnTweet && !isAuthorBlocked && (
               <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
                 <FollowButton 
                   targetUserId={tweet.author?.id ? Number(tweet.author.id) : 0} 
@@ -71,6 +136,12 @@ function PostCard({ tweet }: { tweet: Tweet }) {
             <p className='ui-kicker mb-[18px] text-[12px] leading-[16px] text-[#747272]'>
               {hashtags.length > 0 ? hashtags.join(' ') : '#post #contenu'}
             </p>
+
+            {tweet.media && tweet.media.length > 0 && (
+              <div className='mb-[18px]'>
+                <MediaCarousel media={tweet.media} className='max-h-[250px] rounded-[8px]' />
+              </div>
+            )}
 
             <div className='flex-1 overflow-auto whitespace-pre-line text-[34px] leading-[42px] text-[#111]'>
               {tweet.content}
@@ -108,6 +179,9 @@ export default function FeedPageContainer() {
   const [error, setError] = useState<string | null>(null)
   const [showComposer, setShowComposer] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [editingTweetId, setEditingTweetId] = useState<string | number | null>(null)
+  const [editingContent, setEditingContent] = useState('')
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const prefetchedPageRef = useRef<FollowingTweetsPage | null>(null)
   const prefetchedOffsetRef = useRef<number | null>(null)
@@ -118,6 +192,20 @@ export default function FeedPageContainer() {
 
   const activeRoute: 'feed' | 'explore' = location.pathname.startsWith('/tweets') ? 'explore' : 'feed'
   const shouldOpenComposerFromQuery = new URLSearchParams(location.search).get('compose') === '1'
+
+  // Load current user
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const loadCurrentUser = async () => {
+      try {
+        const user = await getCurrentUser()
+        setCurrentUser(user)
+      } catch {
+        // Silently fail - current user loading is not critical
+      }
+    }
+    loadCurrentUser()
+  }, [isAuthenticated])
 
   const appendUniqueTweets = useCallback((incoming: Tweet[]) => {
     setTweets((previous) => {
@@ -300,6 +388,32 @@ export default function FeedPageContainer() {
     void loadInitialTweets()
   }
 
+  const handleDeleteTweet = async (tweetId: string | number) => {
+    try {
+      await deleteTweet(tweetId)
+      setTweets((prev) => prev.filter((t) => t.id !== tweetId))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Impossible de supprimer le tweet.'
+      setError(message)
+    }
+  }
+
+  const handleEditTweet = async (tweetId: string | number, content: string) => {
+    if (!content.trim()) {
+      setError('Le tweet ne peut pas être vide.')
+      return
+    }
+    try {
+      const updated = await updateTweet(tweetId, { content: content.trim() })
+      setTweets((prev) =>
+        prev.map((t) => (t.id === tweetId ? updated : t))
+      )
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Impossible de modifier le tweet.'
+      setError(message)
+    }
+  }
+
   return (
     <div className='editorial-bg min-h-screen w-full overflow-hidden pb-[132px]'>
       <div className='mx-auto flex w-full max-w-[375px] flex-col items-center'>
@@ -351,7 +465,19 @@ export default function FeedPageContainer() {
         {!showComposer && !isLoading && tweets.length > 0 && (
           <div className='w-full'>
             {tweets.map((tweet) => (
-              <PostCard key={tweet.id} tweet={tweet} />
+              <PostCard 
+                key={tweet.id} 
+                tweet={tweet} 
+                currentUser={currentUser}
+                onEdit={handleEditTweet}
+                onDelete={handleDeleteTweet}
+                editingTweetId={editingTweetId}
+                editingContent={editingContent}
+                onEditingChange={(id, content) => {
+                  setEditingTweetId(id)
+                  setEditingContent(content)
+                }}
+              />
             ))}
             <div ref={sentinelRef} className='h-1 w-full' />
           </div>

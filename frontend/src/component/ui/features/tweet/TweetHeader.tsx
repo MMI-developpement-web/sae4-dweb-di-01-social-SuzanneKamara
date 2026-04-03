@@ -33,13 +33,11 @@ export default function TweetHeader({
   return (
     <div className={cn('flex items-start justify-between p-[20px]', className)}>
       <div className='flex gap-3 flex-1 min-w-0'>
-        {avatar && (
-          <Avatar
-            url={avatar}
-            alt={username}
-            size='md'
-          />
-        )}
+        <Avatar
+          url={avatar}
+          username={username}
+          size='md'
+        />
         <div className='flex-1 min-w-0'>
           <Username
             username={username}

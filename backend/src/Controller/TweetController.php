@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Tweet;
 use App\Repository\TweetRepository;
 use App\Repository\UserRepository;
+use App\Repository\MediaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -120,7 +121,7 @@ class TweetController extends AbstractController
     }
 
     #[Route('', name: 'api_tweet_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, TweetRepository $tweetRepository, UserRepository $userRepository): JsonResponse
+    public function create(Request $request, EntityManagerInterface $entityManager, TweetRepository $tweetRepository, UserRepository $userRepository, MediaRepository $mediaRepository): JsonResponse
     {
         // Verify user is authenticated
         $authUser = $this->getUser();
@@ -140,6 +141,7 @@ class TweetController extends AbstractController
         }
 
         $content = $data['content'] ?? null;
+        $mediaIds = $data['mediaIds'] ?? [];
 
         if (!is_string($content) || trim($content) === '') {
             return $this->json(['error' => 'Le champ content est requis'], 400);
@@ -147,6 +149,15 @@ class TweetController extends AbstractController
 
         if (mb_strlen($content) > 280) {
             return $this->json(['error' => 'Le contenu ne doit pas depasser 280 caracteres'], 400);
+        }
+
+        // Validate mediaIds
+        if (!is_array($mediaIds)) {
+            return $this->json(['error' => 'mediaIds doit être un tableau'], 400);
+        }
+
+        if (count($mediaIds) > 4) {
+            return $this->json(['error' => 'Maximum 4 fichiers par tweet'], 400);
         }
 
         $tweet = (new Tweet())
@@ -157,6 +168,28 @@ class TweetController extends AbstractController
 
         $entityManager->persist($tweet);
         $entityManager->flush();
+
+        // Associate media files with tweet
+        if (count($mediaIds) > 0) {
+            foreach ($mediaIds as $mediaId) {
+                $media = $mediaRepository->find($mediaId);
+
+                // Verify media exists and belongs to the current user
+                if (!$media) {
+                    return $this->json(['error' => sprintf('Media %d non trouvé', $mediaId)], 404);
+                }
+
+                if ($media->getUser()->getId() !== $currentUser->getId()) {
+                    return $this->json(['error' => 'Media n\'appartient pas à l\'utilisateur'], 403);
+                }
+
+                // Link media to tweet
+                $tweet->addMedia($media);
+                $media->setTweet($tweet);
+            }
+
+            $entityManager->flush();
+        }
 
         // Reload with user relation
         $tweet = $tweetRepository->findOneWithUser($tweet->getId());
@@ -222,6 +255,19 @@ class TweetController extends AbstractController
     {
         $user = $tweet->getUser();
         $likes = $tweet->getLiked() ?? [];
+        $media = $tweet->getMedia();
+
+        $mediaArray = [];
+        if ($media && count($media) > 0) {
+            foreach ($media as $m) {
+                $mediaArray[] = [
+                    'id' => $m->getId(),
+                    'media_type' => $m->getMediaType(),
+                    'file_url' => $m->getUrl(),
+                    'file_size' => $m->getFileSize(),
+                ];
+            }
+        }
 
         return [
             'id' => $tweet->getId(),
@@ -243,6 +289,7 @@ class TweetController extends AbstractController
             'content' => $tweet->getContent(),
             'created_at' => $tweet->getCreatedAt()?->format(DATE_ATOM),
             'likes' => count($likes),
+            'media' => $mediaArray,
         ];
     }
 }

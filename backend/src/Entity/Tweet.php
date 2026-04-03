@@ -34,9 +34,16 @@ class Tweet
     #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'tweet', cascade: ['remove'])]
     private Collection $Liked;
 
+    /**
+     * @var Collection<int, Media>
+     */
+    #[ORM\OneToMany(targetEntity: Media::class, mappedBy: 'tweet', cascade: ['remove'])]
+    private Collection $media;
+
     public function __construct()
     {
         $this->Liked = new ArrayCollection();
+        $this->media = new ArrayCollection();
     }
 
 
@@ -117,6 +124,36 @@ class Tweet
             // set the owning side to null (unless already changed)
             if ($liked->getTweet() === $this) {
                 $liked->setTweet(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Media>
+     */
+    public function getMedia(): Collection
+    {
+        return $this->media;
+    }
+
+    public function addMedia(Media $media): static
+    {
+        if (!$this->media->contains($media)) {
+            $this->media->add($media);
+            $media->setTweet($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMedia(Media $media): static
+    {
+        if ($this->media->removeElement($media)) {
+            // set the owning side to null (unless already changed)
+            if ($media->getTweet() === $this) {
+                $media->setTweet(null);
             }
         }
 

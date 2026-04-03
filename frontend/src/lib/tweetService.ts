@@ -8,11 +8,18 @@ export interface Tweet {
     id: string | number
     username: string
     email: string
+    avatar_url?: string
     is_blocked?: boolean
   }
   hashtags?: Array<{
     id: string | number
     name: string
+  }>
+  media?: Array<{
+    id: string | number
+    media_type: string
+    file_url: string
+    file_size: number
   }>
   createdAt?: string
   updatedAt?: string
@@ -21,6 +28,7 @@ export interface Tweet {
 
 export interface CreateTweetPayload {
   content: string
+  mediaIds?: number[]
 }
 
 export interface UpdateTweetPayload {
@@ -56,6 +64,7 @@ function toTweet(item: unknown): Tweet | null {
   const authorId = authorRaw.id ?? authorRaw['@id'] ?? 'unknown'
   const usernameCandidate = authorRaw.username ?? authorRaw.name ?? authorRaw.displayName
   const emailCandidate = authorRaw.email
+  const avatarUrlCandidate = authorRaw.avatar_url ?? authorRaw.avatarUrl ?? ''
   const isBlockedCandidate = authorRaw.is_blocked ?? authorRaw.isBlocked ?? false
 
   const hashtagsRaw = Array.isArray(raw.hashtags) ? raw.hashtags : []
@@ -80,6 +89,29 @@ function toTweet(item: unknown): Tweet | null {
     }
   })
 
+  // Extract media from raw data
+  const mediaRaw = Array.isArray(raw.media) ? raw.media : []
+  const media: Array<{ id: string | number; media_type: string; file_url: string; file_size: number }> = []
+
+  mediaRaw.forEach((item) => {
+    const mediaRecord = toRecord(item)
+    if (!mediaRecord) return
+
+    const mediaId = mediaRecord.id ?? mediaRecord['@id']
+    const mediaType = mediaRecord.media_type ?? mediaRecord.mediaType ?? ''
+    const fileUrl = mediaRecord.file_url ?? mediaRecord.fileUrl ?? mediaRecord.url ?? ''
+    const fileSize = typeof mediaRecord.file_size === 'number' ? mediaRecord.file_size : 0
+
+    if (mediaId && mediaType && fileUrl) {
+      media.push({
+        id: mediaId,
+        media_type: String(mediaType),
+        file_url: String(fileUrl),
+        file_size: fileSize,
+      })
+    }
+  })
+
   return {
     id,
     content,
@@ -87,9 +119,11 @@ function toTweet(item: unknown): Tweet | null {
       id: String(authorId),
       username: typeof usernameCandidate === 'string' ? usernameCandidate : 'unknown',
       email: typeof emailCandidate === 'string' ? emailCandidate : '',
+      avatar_url: typeof avatarUrlCandidate === 'string' && avatarUrlCandidate ? avatarUrlCandidate : undefined,
       is_blocked: Boolean(isBlockedCandidate),
     },
     hashtags,
+    media,
     createdAt:
       typeof raw.createdAt === 'string'
         ? raw.createdAt
