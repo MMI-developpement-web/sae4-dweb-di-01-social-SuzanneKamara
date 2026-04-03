@@ -5,6 +5,7 @@
 
 import { useState } from 'react'
 import { useAuth, usePosts } from '@/store'
+import { MESSAGES } from '@/constants/messages'
 import PostComposer from '@/component/ui/features/post/PostComposer'
 
 interface PostComposerContainerProps {

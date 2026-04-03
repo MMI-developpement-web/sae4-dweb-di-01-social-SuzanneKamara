@@ -2,6 +2,9 @@
 
 namespace App\Controller;
 
+use App\Dto\TweetCreateDto;
+use App\Dto\TweetUpdateDto;
+use App\Dto\PaginationDto;
 use App\Entity\Tweet;
 use App\Repository\TweetRepository;
 use App\Repository\UserRepository;
@@ -9,35 +12,36 @@ use App\Repository\MediaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/api/tweets')]
 class TweetController extends AbstractController
 {
     #[Route('/explore', name: 'api_tweet_explore', methods: ['GET'])]
-    public function explore(Request $request, TweetRepository $tweetRepository): JsonResponse
+    public function explore(#[MapQueryString] PaginationDto $pagination, TweetRepository $tweetRepository): JsonResponse
     {
-        $limit = max(1, min(100, (int) $request->query->get('limit', 40)));
-        $offset = max(0, (int) $request->query->get('offset', 0));
-
-        $tweets = $tweetRepository->findAllWithUserPage($limit + 1, $offset);
-        $hasMore = count($tweets) > $limit;
+        $tweets = $tweetRepository->findAllWithUserPage($pagination->limit + 1, $pagination->offset);
+        $hasMore = count($tweets) > $pagination->limit;
 
         if ($hasMore) {
-            $tweets = array_slice($tweets, 0, $limit);
+            $tweets = array_slice($tweets, 0, $pagination->limit);
         }
+
+        // Shuffle the tweets for a randomized explore experience
+        shuffle($tweets);
 
         return $this->json([
             'data' => array_map(fn(Tweet $tweet): array => $this->toArray($tweet), $tweets),
             'has_more' => $hasMore,
-            'limit' => $limit,
-            'offset' => $offset,
+            'limit' => $pagination->limit,
+            'offset' => $pagination->offset,
         ]);
     }
 
     #[Route('/feed', name: 'api_tweet_feed', methods: ['GET'])]
-    public function feed(Request $request, TweetRepository $tweetRepository, UserRepository $userRepository): JsonResponse
+    public function feed(#[MapQueryString] PaginationDto $pagination, TweetRepository $tweetRepository, UserRepository $userRepository): JsonResponse
     {
         $authUser = $this->getUser();
         if (!$authUser instanceof \App\Entity\User) {
@@ -49,47 +53,41 @@ class TweetController extends AbstractController
             return $this->json(['error' => 'Utilisateur introuvable'], 401);
         }
 
-        $limit = max(1, min(100, (int) $request->query->get('limit', 40)));
-        $offset = max(0, (int) $request->query->get('offset', 0));
-
-        $tweets = $tweetRepository->findFeedForUser($currentUser, $limit + 1, $offset);
-        $hasMore = count($tweets) > $limit;
+        $tweets = $tweetRepository->findFeedForUser($currentUser, $pagination->limit + 1, $pagination->offset);
+        $hasMore = count($tweets) > $pagination->limit;
 
         if ($hasMore) {
-            $tweets = array_slice($tweets, 0, $limit);
+            $tweets = array_slice($tweets, 0, $pagination->limit);
         }
 
         return $this->json([
             'data' => array_map(fn(Tweet $tweet): array => $this->toArray($tweet), $tweets),
             'has_more' => $hasMore,
-            'limit' => $limit,
-            'offset' => $offset,
+            'limit' => $pagination->limit,
+            'offset' => $pagination->offset,
         ]);
     }
 
     #[Route('/user/{userId}', name: 'api_tweet_user', methods: ['GET'])]
-    public function userTweets(int $userId, Request $request, TweetRepository $tweetRepository, UserRepository $userRepository): JsonResponse
+    public function userTweets(int $userId, #[MapQueryString] PaginationDto $pagination, TweetRepository $tweetRepository, UserRepository $userRepository): JsonResponse
     {
         $user = $userRepository->find($userId);
         if (!$user) {
             return $this->json(['error' => 'Utilisateur introuvable'], 404);
         }
 
-        $limit = max(1, min(100, (int) $request->query->get('limit', 40)));
-        $offset = max(0, (int) $request->query->get('offset', 0));
-
-        $tweets = $tweetRepository->findByUserWithPagination($user, $limit + 1, $offset);
-        $hasMore = count($tweets) > $limit;
+        $tweets = $tweetRepository->findByUserWithPagination($user, $pagination->limit + 1, $pagination->offset);
+        $hasMore = count($tweets) > $pagination->limit;
 
         if ($hasMore) {
-            $tweets = array_slice($tweets, 0, $limit);
+            $tweets = array_slice($tweets, 0, $pagination->limit);
         }
 
         return $this->json([
             'data' => array_map(fn(Tweet $tweet): array => $this->toArray($tweet), $tweets),
             'has_more' => $hasMore,
-            'limit' => $limit,
-            'offset' => $offset,
+            'limit' => $pagination->limit,
+            'offset' => $pagination->offset,
         ]);
     }
 
@@ -121,7 +119,7 @@ class TweetController extends AbstractController
     }
 
     #[Route('', name: 'api_tweet_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, TweetRepository $tweetRepository, UserRepository $userRepository, MediaRepository $mediaRepository): JsonResponse
+    public function create(#[MapRequestPayload] TweetCreateDto $tweetDto, EntityManagerInterface $entityManager, TweetRepository $tweetRepository, UserRepository $userRepository, MediaRepository $mediaRepository): JsonResponse
     {
         // Verify user is authenticated
         $authUser = $this->getUser();
@@ -135,43 +133,18 @@ class TweetController extends AbstractController
             return $this->json(['error' => 'Utilisateur non trouvé ou ID introuvable'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
-            return $this->json(['error' => 'JSON invalide'], 400);
-        }
-
-        $content = $data['content'] ?? null;
-        $mediaIds = $data['mediaIds'] ?? [];
-
-        if (!is_string($content) || trim($content) === '') {
-            return $this->json(['error' => 'Le champ content est requis'], 400);
-        }
-
-        if (mb_strlen($content) > 280) {
-            return $this->json(['error' => 'Le contenu ne doit pas depasser 280 caracteres'], 400);
-        }
-
-        // Validate mediaIds
-        if (!is_array($mediaIds)) {
-            return $this->json(['error' => 'mediaIds doit être un tableau'], 400);
-        }
-
-        if (count($mediaIds) > 4) {
-            return $this->json(['error' => 'Maximum 4 fichiers par tweet'], 400);
-        }
-
         $tweet = (new Tweet())
             ->setUser($currentUser)  // Set the relation directly
             ->setUserId($currentUser->getId())  // Also set the foreign key
-            ->setContent(trim($content))
+            ->setContent(trim($tweetDto->content))
             ->setCreatedAt(new \DateTimeImmutable());
 
         $entityManager->persist($tweet);
         $entityManager->flush();
 
         // Associate media files with tweet
-        if (count($mediaIds) > 0) {
-            foreach ($mediaIds as $mediaId) {
+        if (count($tweetDto->mediaIds) > 0) {
+            foreach ($tweetDto->mediaIds as $mediaId) {
                 $media = $mediaRepository->find($mediaId);
 
                 // Verify media exists and belongs to the current user
@@ -198,7 +171,7 @@ class TweetController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_tweet_update', methods: ['PUT'])]
-    public function update(?Tweet $tweet, Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function update(?Tweet $tweet, #[MapRequestPayload] TweetUpdateDto $tweetDto, EntityManagerInterface $entityManager): JsonResponse
     {
         if (!$tweet) {
             return $this->json(['error' => 'Tweet introuvable'], 404);
@@ -210,23 +183,7 @@ class TweetController extends AbstractController
             return $this->json(['error' => 'Vous ne pouvez modifier que vos propres tweets'], 403);
         }
 
-        $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
-            return $this->json(['error' => 'JSON invalide'], 400);
-        }
-
-        if (array_key_exists('content', $data)) {
-            if (!is_string($data['content']) || trim($data['content']) === '') {
-                return $this->json(['error' => 'Le champ content doit etre une chaine non vide'], 400);
-            }
-
-            if (mb_strlen($data['content']) > 280) {
-                return $this->json(['error' => 'Le contenu ne doit pas depasser 280 caracteres'], 400);
-            }
-
-            $tweet->setContent(trim($data['content']));
-        }
-
+        $tweet->setContent(trim($tweetDto->content));
         $entityManager->flush();
 
         return $this->json($this->toArray($tweet));

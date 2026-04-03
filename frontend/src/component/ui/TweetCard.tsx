@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { cn } from '../../lib/utils.ts'
+import { MESSAGES } from '../../constants/messages'
 import Button from './atoms/Button'
 import Avatar from './atoms/Avatar'
 import LikeButton from './shared/LikeButton'
@@ -38,7 +39,7 @@ export default function TweetCard({
     setError(null)
 
     if (!editContent.trim()) {
-      setError('Tweet cannot be empty.')
+      setError(MESSAGES.TWEET_EMPTY_EN)
       return
     }
 
@@ -48,7 +49,7 @@ export default function TweetCard({
       setIsEditing(false)
       onUpdated?.(updated)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update tweet.'
+      const message = err instanceof Error ? err.message : MESSAGES.TWEET_UPDATE_FAILED_EN
       setError(message)
       onError?.(message)
     } finally {
@@ -64,7 +65,7 @@ export default function TweetCard({
       await deleteTweet(tweet.id)
       onDeleted?.()
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete tweet.'
+      const message = err instanceof Error ? err.message : MESSAGES.TWEET_DELETE_FAILED_EN
       setError(message)
       onError?.(message)
     } finally {
@@ -258,7 +259,7 @@ export default function TweetCard({
       <DeleteConfirmModal
         isOpen={showDeleteConfirm}
         title="Confirmation de suppression"
-        message="Vous êtes sur le point de supprimer cette publication"
+        message={MESSAGES.CONFIRM_DELETE_TWEET}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         isLoading={isLoading}

@@ -8,6 +8,7 @@ import { useRefreshPreferences } from '../context/RefreshPreferencesContext';
 import RefreshButton from '../component/ui/RefreshButton';
 import LikeButton from '../component/ui/shared/LikeButton';
 import FollowButton from '../component/ui/shared/FollowButton';
+import Avatar from '../component/ui/atoms/Avatar';
 import MediaCarousel from '../component/ui/features/tweet/MediaCarousel';
 
 const EXPLORE_PAGE_SIZE = 40;
@@ -34,6 +35,13 @@ function LargeTweetOverlay({ tweet, onClose }) {
       })
     : 'Date inconnue';
 
+  // Calculate height based on content
+  const estimatedLines = Math.ceil(tweet.content.length / 50);
+  const hasMedia = tweet.media && tweet.media.length > 0;
+  const mediaHeight = hasMedia ? 200 : 0;
+  const minHeight = Math.max(350, estimatedLines * 25 + 120 + mediaHeight);
+  const maxHeight = Math.min(minHeight, 80 * window.innerHeight / 100); // Max 80vh
+
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[1px]'>
       <button
@@ -54,9 +62,15 @@ function LargeTweetOverlay({ tweet, onClose }) {
         </button>
 
         <div className='relative w-[333px]'>
-          <div className='absolute top-[30px] left-[8px] -z-10 h-[555px] w-[322px] border-2 border-black/10 bg-white/20' />
+          <div 
+            className='absolute top-[30px] left-[8px] -z-10 w-[322px] border-2 border-black/10 bg-white/20 rounded-[8px]'
+            style={{ height: `${maxHeight}px` }}
+          />
 
-          <div className={`ui-surface relative h-[558px] w-[325px] overflow-hidden ${isAuthorBlocked ? 'bg-yellow-50' : ''}`}>
+          <div 
+            className={`ui-surface relative w-[325px] overflow-hidden rounded-[8px] flex flex-col ${isAuthorBlocked ? 'bg-yellow-50' : ''}`}
+            style={{ height: `${maxHeight}px` }}
+          >
             <div className='flex items-start justify-between p-[20px]'>
               {/* pt-[18px] */}
               <div className=' flex-1 min-w-0'>
@@ -65,7 +79,11 @@ function LargeTweetOverlay({ tweet, onClose }) {
               </div>
 
               <div className='relative flex-shrink-0'>
-                <div className='size-[51px] rounded-full bg-[#D3D3D3]' />
+              <Avatar
+                url={tweet.author?.avatar_url}
+                username={tweet.author?.username || 'unknown'}
+                size='lg'
+              />
                 {!isAuthorBlocked && (
                   <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
                     <FollowButton 
@@ -78,13 +96,13 @@ function LargeTweetOverlay({ tweet, onClose }) {
             </div>
 
             {isAuthorBlocked ? (
-              <div className='flex h-[calc(100%-91px)] flex-col items-center justify-center px-[22px] pb-[20px]'>
+              <div className='flex flex-1 flex-col items-center justify-center px-[22px] pb-[20px]'>
                 <p className='text-[24px] font-semibold text-yellow-900 mb-2'>⚠️</p>
                 <p className='text-center text-[14px] font-semibold text-yellow-900'>Ce compte a été bloqué</p>
                 <p className='text-center text-[12px] text-yellow-800 mt-1'>pour non respect des conditions d'utilisation</p>
               </div>
             ) : (
-              <div className='flex h-[calc(100%-91px)] flex-col px-[22px] pb-[20px]'>
+              <div className='flex flex-1 flex-col px-[22px] pb-[20px]'>
                 <p className='ui-kicker mb-[18px] text-[12px] leading-[16px] text-[#747272]'>
                   {hashtags.length > 0 ? hashtags.join(' ') : '#post #contenu'}
                 </p>
@@ -163,15 +181,6 @@ export default function Tweets() {
     loadCurrentUser();
   }, [isAuthenticated]);
 
-  const shuffleArray = useCallback((array) => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }, []);
-
   const appendUniqueTweets = useCallback((incoming) => {
     setTweets((previous) => {
       const next = [...previous];
@@ -222,16 +231,16 @@ export default function Tweets() {
 
     try {
       const page = await fetchExploreTweetsPage(EXPLORE_PAGE_SIZE, 0);
-      const shuffledTweets = shuffleArray(page.tweets);
-      setTweets(shuffledTweets);
-      setOffset(shuffledTweets.length);
+      // Server now handles shuffling, so no need to shuffle on frontend
+      setTweets(page.tweets);
+      setOffset(page.tweets.length);
       setHasMore(page.hasMore);
 
-      if (page.hasMore && shuffledTweets.length > 0) {
-        void prefetchPage(shuffledTweets.length);
+      if (page.hasMore && page.tweets.length > 0) {
+        void prefetchPage(page.tweets.length);
       }
 
-      if (shuffledTweets.length === 0) {
+      if (page.tweets.length === 0) {
         setError('Aucun post disponible pour le moment.');
       }
     } catch (err) {
@@ -240,7 +249,7 @@ export default function Tweets() {
     } finally {
       setIsLoading(false);
     }
-  }, [prefetchPage, shuffleArray]);
+  }, [prefetchPage]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);

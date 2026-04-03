@@ -2,38 +2,37 @@ import { useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FiSettings, FiLogOut, FiUser } from 'react-icons/fi'
 import { useAuth } from '../../auth/useAuth'
+// import logoUrl from '/Vector3.svg?url'
+import textLogoUrl from '/textLogo.svg?url'
 
 type HeaderConfig = {
   kicker: string
-  title: string
+  
 }
 
 function getHeaderConfig(pathname: string): HeaderConfig {
   if (pathname.startsWith('/feed')) {
-    return { kicker: 'Feed', title: 'LnkUp' }
+    return { kicker: 'Feed' }
   }
 
   if (pathname === '/' || pathname.startsWith('/tweets')) {
-    return { kicker: 'Explore', title: 'LnkUp' }
+    return { kicker: 'Explore' }
   }
 
   if (pathname.startsWith('/users')) {
-    return { kicker: 'Data', title: 'Users' }
+    return { kicker: 'Data' }
   }
 
-  if (pathname.startsWith('/hashtags')) {
-    return { kicker: 'Data', title: 'Hashtags' }
-  }
 
   if (pathname.startsWith('/settings')) {
-    return { kicker: 'Profil', title: 'Paramètres' }
+    return { kicker: 'Profil' }
   }
 
   if (pathname.startsWith('/profile')) {
-    return { kicker: 'Profil', title: 'Profil' }
+    return { kicker: 'Profil' }
   }
 
-  return { kicker: 'Edition', title: 'LnkUp' }
+  return { kicker: 'Edition'}
 }
 
 export default function AppHeader() {
@@ -45,7 +44,7 @@ export default function AppHeader() {
     return null
   }
 
-  const { kicker, title } = getHeaderConfig(location.pathname)
+  const { kicker} = getHeaderConfig(location.pathname)
 
   const onLogout = useCallback(() => {
     logout()
@@ -61,13 +60,25 @@ export default function AppHeader() {
   }, [navigate])
 
   return (
-    <header className='sticky top-0 z-40 mx-auto w-full max-w-[375px]  backdrop-blur-sm'>
-      <div className='mb-[14px] flex items-start justify-between gap-[10px] px-[25px] pt-[18px]'>
-        <div>
-          <p className='ui-kicker text-[10px] text-black/60'>{kicker}</p>
-          <p className='ui-title mt-1 text-[32px] leading-[26px] text-black'>{title}</p>
+    <header className='sticky top-0 z-40 mx-auto w-full max-w-[375px] backdrop-blur-sm'>
+      <div className='px-[25px] pt-[18px] pb-[12px]'>
+        {/* Logo Section */}
+       
+        
+        {/* Header Content with Navigation */}
+        <div className='flex items-start justify-between gap-[10px]'>
+          <div>
+            <p className='ui-kicker text-[10px] text-black/60'>{kicker}</p>
+             <div className='mb-[16px] flex items-center gap-[12px]'>
+          {/* <img 
+            src={logoUrl}
+            alt="LnkUp Logo" 
+            className='w-[32px] h-[32px]'
+          /> */}
+          <img src={textLogoUrl} alt="LnkUp Text Logo" className='w-[100px] h-[24px]' />
         </div>
-        <div className='flex items-center gap-[10px]'>
+          </div>
+          <div className='flex items-center gap-[10px]'>
           <button
             type='button'
             onClick={onNavigateToProfile}
@@ -92,6 +103,7 @@ export default function AppHeader() {
             <FiLogOut size={14} />
             <span>Logout</span>
           </button>
+          </div>
         </div>
       </div>
     </header>

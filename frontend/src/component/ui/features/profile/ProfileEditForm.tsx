@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { updateUserProfile, uploadProfileImage, type CurrentUser, type UpdateProfileData } from '../../../../lib/userService'
+import { MESSAGES } from '../../../../constants/messages'
 import DeleteConfirmModal from '../../DeleteConfirmModal'
 import Avatar from '../../atoms/Avatar'
 
@@ -100,7 +101,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       }
 
       const updatedUser = await updateUserProfile(user.id, updateData)
-      setSuccessMessage('Profil mis à jour avec succès ✓')
+      setSuccessMessage(MESSAGES.PROFILE_UPDATED)
       
       // Auto-hide success message after 3 seconds
       setTimeout(() => {
@@ -108,7 +109,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
         onSave(updatedUser)
       }, 1500)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue'
+      const errorMessage = err instanceof Error ? err.message : MESSAGES.GENERIC_ERROR
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -125,13 +126,13 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       // const response = await fetch(`/api/users/${user.id}`, { method: 'DELETE' })
       // if (!response.ok) throw new Error('Failed to delete account')
       
-      setSuccessMessage('Compte en cours de suppression...')
+      setSuccessMessage(MESSAGES.ACCOUNT_DELETION_PENDING)
       // Redirect to login or home page after deletion
       // window.location.href = '/login'
       
       console.log('Account deletion not yet implemented. Backend endpoint needed.')
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Impossible de supprimer le compte'
+      const errorMessage = err instanceof Error ? err.message : MESSAGES.ACCOUNT_DELETION_FAILED
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -362,7 +363,7 @@ export default function ProfileEditForm({ user, onSave, onCancel }: ProfileEditF
       <DeleteConfirmModal
         isOpen={showDeleteConfirm}
         title="Supprimer votre compte"
-        message="Êtes-vous sûr de vouloir supprimer votre compte? Cette action est irréversible."
+        message={MESSAGES.CONFIRM_DELETE_ACCOUNT}
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteConfirm(false)}
         isLoading={isLoading}

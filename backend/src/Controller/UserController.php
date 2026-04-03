@@ -2,29 +2,31 @@
 
 namespace App\Controller;
 
+use App\Dto\UserRegisterDto;
+use App\Dto\UserUpdateDto;
+use App\Dto\UserSearchDto;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Psr\Log\LoggerInterface;
 
 #[Route('/api/users')]
 class UserController extends AbstractController
 {
     #[Route('', name: 'api_user_index', methods: ['GET'])]
-    public function index(Request $request, UserRepository $userRepository): JsonResponse
+    public function index(#[MapQueryString] UserSearchDto $searchDto, UserRepository $userRepository): JsonResponse
     {
-        $email = $request->query->get('email');
-
-        if (is_string($email) && trim($email) !== '') {
-            $user = $userRepository->findOneBy(['email' => trim($email)]);
+        if ($searchDto->email) {
+            $user = $userRepository->findOneBy(['email' => $searchDto->email]);
 
             if (!$user) {
                 return $this->json([]);
@@ -64,7 +66,7 @@ class UserController extends AbstractController
 
     #[Route('', name: 'api_user_create', methods: ['POST'])]
     public function create(
-        Request $request,
+        #[MapRequestPayload] UserRegisterDto $userDto,
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
@@ -72,78 +74,24 @@ class UserController extends AbstractController
         UrlGeneratorInterface $urlGenerator,
         LoggerInterface $logger
     ): JsonResponse {
-        $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
-            return $this->json(['error' => 'JSON invalide'], 400);
-        }
-
-        $username = $data['username'] ?? null;
-        $email = $data['email'] ?? null;
-        $password = $data['password'] ?? null;
-
-        if (!is_string($username) || trim($username) === '') {
-            return $this->json(['error' => 'Le champ username est requis'], 400);
-        }
-        if (!is_string($email) || trim($email) === '') {
-            return $this->json(['error' => 'Le champ email est requis'], 400);
-        }
-        if (!is_string($password) || trim($password) === '') {
-            return $this->json(['error' => 'Le champ password est requis'], 400);
-        }
-
-        $username = trim($username);
-        $email = mb_strtolower(trim($email));
-        $password = trim($password);
-
-        if (mb_strlen($username) < 3) {
-            return $this->json(['error' => 'Le username doit contenir au moins 3 caracteres'], 400);
-        }
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->json(['error' => 'Le format de l\'email est invalide'], 400);
-        }
-
-        if (mb_strlen($password) < 8) {
-            return $this->json(['error' => 'Le mot de passe doit contenir au moins 8 caracteres'], 400);
-        }
-
-        if (!preg_match('/[A-Z]/', $password)) {
-            return $this->json(['error' => 'Le mot de passe doit contenir au moins une majuscule'], 400);
-        }
-
-        if (!preg_match('/[a-z]/', $password)) {
-            return $this->json(['error' => 'Le mot de passe doit contenir au moins une minuscule'], 400);
-        }
-
-        if (!preg_match('/\d/', $password)) {
-            return $this->json(['error' => 'Le mot de passe doit contenir au moins un chiffre'], 400);
-        }
-
-        if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
-            return $this->json(['error' => 'Le mot de passe doit contenir au moins un caractere special'], 400);
-        }
+        $email = mb_strtolower(trim($userDto->email));
 
         if ($userRepository->findOneBy(['email' => $email])) {
             return $this->json(['error' => 'Un utilisateur avec cet email existe deja'], 409);
         }
 
-        if ($userRepository->findOneBy(['username' => $username])) {
+        if ($userRepository->findOneBy(['username' => $userDto->username])) {
             return $this->json(['error' => 'Ce nom d\'utilisateur est deja utilise'], 409);
         }
 
         $user = (new User())
-            ->setUsername($username)
+            ->setUsername($userDto->username)
             ->setEmail($email)
             // Registration endpoint should not accept privileged roles from client input.
             ->setRoles(['ROLE_USER'])
-            ->setIsVerified(false)
-            ->setBio(isset($data['bio']) && is_string($data['bio']) ? $data['bio'] : null)
-            ->setAvatarUrl(isset($data['avatar_url']) && is_string($data['avatar_url']) ? $data['avatar_url'] : null)
-            ->setBannerUrl(isset($data['banner_url']) && is_string($data['banner_url']) ? $data['banner_url'] : null)
-            ->setLocation(isset($data['location']) && is_string($data['location']) ? $data['location'] : null)
-            ->setWebsiteUrl(isset($data['website_url']) && is_string($data['website_url']) ? $data['website_url'] : null);
+            ->setIsVerified(false);
 
-        $user->setPassword($passwordHasher->hashPassword($user, $password));
+        $user->setPassword($passwordHasher->hashPassword($user, $userDto->password));
         $verificationToken = bin2hex(random_bytes(32));
         $user
             ->setEmailVerificationToken($verificationToken)
@@ -194,7 +142,7 @@ class UserController extends AbstractController
     #[Route('/{id}', name: 'api_user_update', methods: ['PUT'])]
     public function update(
         ?User $user,
-        Request $request,
+        #[MapRequestPayload] UserUpdateDto $userDto,
         EntityManagerInterface $entityManager
     ): JsonResponse {
         if (!$user) {
@@ -212,71 +160,25 @@ class UserController extends AbstractController
             return $this->json(['error' => 'Vous n\'êtes pas autorisé à modifier ce profil'], 403);
         }
 
-        $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
-            return $this->json(['error' => 'JSON invalide'], 400);
+        // Update all fields from DTO
+        if ($userDto->bio !== null) {
+            $user->setBio($userDto->bio === '' ? null : $userDto->bio);
         }
 
-        $errors = [];
-
-        // Update bio if provided
-        if (isset($data['bio'])) {
-            if (!is_string($data['bio']) && $data['bio'] !== null) {
-                $errors['bio'] = 'Le champ bio doit être une chaîne de caractères';
-            } elseif (is_string($data['bio']) && mb_strlen($data['bio']) > 500) {
-                $errors['bio'] = 'La bio ne doit pas dépasser 500 caractères';
-            } else {
-                $user->setBio($data['bio'] === '' ? null : $data['bio']);
-            }
+        if ($userDto->location !== null) {
+            $user->setLocation($userDto->location === '' ? null : $userDto->location);
         }
 
-        // Update location if provided
-        if (isset($data['location'])) {
-            if (!is_string($data['location']) && $data['location'] !== null) {
-                $errors['location'] = 'Le champ location doit être une chaîne de caractères';
-            } elseif (is_string($data['location']) && mb_strlen($data['location']) > 100) {
-                $errors['location'] = 'La localisation ne doit pas dépasser 100 caractères';
-            } else {
-                $user->setLocation($data['location'] === '' ? null : $data['location']);
-            }
+        if ($userDto->website_url !== null) {
+            $user->setWebsiteUrl($userDto->website_url === '' ? null : $userDto->website_url);
         }
 
-        // Update website_url if provided
-        if (isset($data['website_url'])) {
-            if (!is_string($data['website_url']) && $data['website_url'] !== null) {
-                $errors['website_url'] = 'Le champ website_url doit être une chaîne de caractères';
-            } elseif (is_string($data['website_url']) && mb_strlen($data['website_url']) > 500) {
-                $errors['website_url'] = 'L\'URL du site ne doit pas dépasser 500 caractères';
-            } else {
-                $user->setWebsiteUrl($data['website_url'] === '' ? null : $data['website_url']);
-            }
+        if ($userDto->avatar_url !== null) {
+            $user->setAvatarUrl($userDto->avatar_url === '' ? null : $userDto->avatar_url);
         }
 
-        // Update avatar_url if provided
-        if (isset($data['avatar_url'])) {
-            if (!is_string($data['avatar_url']) && $data['avatar_url'] !== null) {
-                $errors['avatar_url'] = 'Le champ avatar_url doit être une chaîne de caractères';
-            } elseif (is_string($data['avatar_url']) && mb_strlen($data['avatar_url']) > 500) {
-                $errors['avatar_url'] = 'L\'URL de l\'avatar ne doit pas dépasser 500 caractères';
-            } else {
-                $user->setAvatarUrl($data['avatar_url'] === '' ? null : $data['avatar_url']);
-            }
-        }
-
-        // Update banner_url if provided
-        if (isset($data['banner_url'])) {
-            if (!is_string($data['banner_url']) && $data['banner_url'] !== null) {
-                $errors['banner_url'] = 'Le champ banner_url doit être une chaîne de caractères';
-            } elseif (is_string($data['banner_url']) && mb_strlen($data['banner_url']) > 500) {
-                $errors['banner_url'] = 'L\'URL de la bannière ne doit pas dépasser 500 caractères';
-            } else {
-                $user->setBannerUrl($data['banner_url'] === '' ? null : $data['banner_url']);
-            }
-        }
-
-        // Return validation errors if any
-        if (!empty($errors)) {
-            return $this->json(['errors' => $errors], 400);
+        if ($userDto->banner_url !== null) {
+            $user->setBannerUrl($userDto->banner_url === '' ? null : $userDto->banner_url);
         }
 
         // Persist changes

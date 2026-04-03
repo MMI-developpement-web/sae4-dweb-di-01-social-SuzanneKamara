@@ -2,6 +2,7 @@
 
 namespace App\Controller\Api;
 
+use App\Dto\FollowCreateDto;
 use App\Entity\FolowingFollower;
 use App\Entity\User;
 use App\Repository\FolowingFollowerRepository;
@@ -10,6 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/follows')]
@@ -60,7 +62,7 @@ class FollowController extends AbstractController
 
     #[Route('', name: 'follow_create', methods: ['POST'])]
     public function create(
-        Request $request,
+        #[MapRequestPayload] FollowCreateDto $followDto,
         EntityManagerInterface $em,
         UserRepository $userRepository,
         FolowingFollowerRepository $followRepo
@@ -70,18 +72,11 @@ class FollowController extends AbstractController
             return $this->json(['error' => 'Authentification requise'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
-        $followingId = $data['following_id'] ?? null;
-
-        if (!$followingId) {
-            return $this->json(['error' => 'following_id requis'], 400);
-        }
-
-        if ($currentUser->getId() === $followingId) {
+        if ($currentUser->getId() === $followDto->following_id) {
             return $this->json(['error' => 'On ne peut pas s\'abonner à soi-même'], 400);
         }
 
-        $following = $userRepository->find($followingId);
+        $following = $userRepository->find($followDto->following_id);
 
         if (!$following) {
             return $this->json(['error' => 'Utilisateur à suivre introuvable'], 404);

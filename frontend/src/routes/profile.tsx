@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiEdit2, FiMapPin, FiGlobe } from 'react-icons/fi'
 import { useAuth } from '../auth/useAuth'
+import { MESSAGES } from '../constants/messages'
 import { getCurrentUser, type CurrentUser } from '../lib/userService'
 import { fetchUserTweetsPage, type Tweet } from '../lib/tweetService'
 import TweetCard from '../component/ui/TweetCard'
@@ -36,7 +37,7 @@ export default function Profile() {
         const tweetsPage = await fetchUserTweetsPage(user.id, 40, 0)
         setUserTweets(tweetsPage.tweets)
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Erreur lors du chargement du profil'
+        const message = err instanceof Error ? err.message : MESSAGES.PROFILE_LOAD_ERROR
         setError(message)
         console.error('Error loading profile:', err)
       } finally {

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Dto\LikeCreateDto;
 use App\Entity\Like;
 use App\Repository\LikeRepository;
 use App\Repository\TweetRepository;
@@ -10,6 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/api/likes')]
@@ -62,7 +64,7 @@ class LikeController extends AbstractController
 
     #[Route('', name: 'api_like_create', methods: ['POST'])]
     public function create(
-        Request $request,
+        #[MapRequestPayload] LikeCreateDto $likeDto,
         EntityManagerInterface $entityManager,
         TweetRepository $tweetRepository
     ): JsonResponse {
@@ -72,14 +74,7 @@ class LikeController extends AbstractController
             return $this->json(['error' => 'Authentification requise'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
-
-        // Validation des données entrantes
-        if (!isset($data['tweet_id'])) {
-            return $this->json(['error' => 'tweet_id est requis'], 400);
-        }
-
-        $tweet = $tweetRepository->find($data['tweet_id']);
+        $tweet = $tweetRepository->find($likeDto->tweet_id);
         if (!$tweet) {
             return $this->json(['error' => 'Tweet introuvable'], 404);
         }

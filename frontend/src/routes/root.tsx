@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import AppHeader from '../component/ui/AppHeader'
+import ErrorBoundary from '../component/ui/ErrorBoundary'
 import { useBlockedStatus } from '../hooks/useBlockedStatus'
 import { useAuth } from '../auth/useAuth'
 import '../App.css'
@@ -44,7 +45,9 @@ export default function Root() {
       )}
 
       <AppHeader />
-      <Outlet />
+      <ErrorBoundary>
+        <Outlet />
+      </ErrorBoundary>
     </div>
   )
 }

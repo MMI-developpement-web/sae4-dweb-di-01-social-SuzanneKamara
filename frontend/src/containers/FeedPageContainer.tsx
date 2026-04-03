@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FiMessageSquare, FiRepeat } from 'react-icons/fi'
+import { MESSAGES } from '../constants/messages'
 import TweetComposer from '../component/ui/TweetComposer'
 import RefreshButton from '../component/ui/RefreshButton'
 import FollowButton from '../component/ui/shared/FollowButton'
 import LikeButton from '../component/ui/shared/LikeButton'
 import MediaCarousel from '../component/ui/features/tweet/MediaCarousel'
+import Avatar from '../component/ui/atoms/Avatar'
 import BottomNav from '../component/ui/features/navigation/BottomNav'
 import { useAuth } from '../auth/useAuth'
 import { useRefreshPreferences } from '../context/RefreshPreferencesContext'
@@ -79,10 +81,25 @@ function PostCard({ tweet, currentUser, onEdit, onDelete, editingTweetId, editin
 
   return (
     <div className='relative mb-[28px] w-[333px]'>
-      <div className='absolute top-[30px] left-[8px] -z-10 h-[555px] w-[322px] border-2 border-black/10 bg-white/20' />
+      {/* Calculate height based on content */}
+      {(() => {
+        const estimatedLines = Math.ceil(tweet.content.length / 35)
+        const hasMedia = tweet.media && tweet.media.length > 0
+        const mediaHeight = hasMedia ? 180 : 0
+        const minHeight = Math.max(250, estimatedLines * 22 + 100 + mediaHeight)
+        
+        return (
+          <>
+            <div 
+              className='absolute top-[30px] left-[8px] -z-10 w-[322px] border-2 border-black/10 bg-white/20 rounded-[12px]'
+              style={{ height: `${minHeight}px` }}
+            />
 
-      <div className={`ui-surface relative h-[558px] w-[325px] overflow-hidden ${isAuthorBlocked ? 'bg-yellow-50' : ''}`}>
-        <div className='flex items-start justify-between p-[20px]'>
+            <div 
+              className={`ui-surface relative w-[325px] overflow-hidden rounded-[12px] flex flex-col ${isAuthorBlocked ? 'bg-yellow-50' : ''}`}
+              style={{ minHeight: `${minHeight}px` }}
+            >
+              <div className='flex items-start justify-between p-[20px]'>
            {/* pt-[18px] */}
               <div className=' flex-1 min-w-0'>
                 <p className='ui-title text-[30px] leading-[22px] text-[#6d6d6d] max-w-[90%] truncate pt-[18px]'>@{tweet.author?.username || 'username'}</p>
@@ -112,7 +129,11 @@ function PostCard({ tweet, currentUser, onEdit, onDelete, editingTweetId, editin
                 </button>
               </div>
             ) : (
-              <div className='size-[51px] rounded-full bg-[#D3D3D3]' />
+              <Avatar
+                url={tweet.author?.avatar_url}
+                username={tweet.author?.username || 'unknown'}
+                size='lg'
+              />
             )}
             {!isOwnTweet && !isAuthorBlocked && (
               <div className='absolute right-[-12px] bottom-[2px] grid size-[24px] place-items-center rounded-[2px] bg-[#111] text-white'>
@@ -126,13 +147,13 @@ function PostCard({ tweet, currentUser, onEdit, onDelete, editingTweetId, editin
         </div>
 
         {isAuthorBlocked ? (
-          <div className='flex h-[calc(100%-91px)] flex-col items-center justify-center px-[22px] pb-[20px]'>
+          <div className='flex flex-1 flex-col items-center justify-center px-[22px] pb-[20px]'>
             <p className='text-[24px] font-semibold text-yellow-900 mb-2'>⚠️</p>
             <p className='text-center text-[14px] font-semibold text-yellow-900'>Ce compte a été bloqué</p>
             <p className='text-center text-[12px] text-yellow-800 mt-1'>pour non respect des conditions d'utilisation</p>
           </div>
         ) : (
-          <div className='flex h-[calc(100%-91px)] flex-col px-[22px] pb-[20px]'>
+          <div className='flex flex-1 flex-col px-[22px] pb-[20px]'>
             <p className='ui-kicker mb-[18px] text-[12px] leading-[16px] text-[#747272]'>
               {hashtags.length > 0 ? hashtags.join(' ') : '#post #contenu'}
             </p>
@@ -148,7 +169,10 @@ function PostCard({ tweet, currentUser, onEdit, onDelete, editingTweetId, editin
             </div>
           </div>
         )}
-      </div>
+            </div>
+          </>
+        )
+      })()}
 
       {!isAuthorBlocked && (
         <div className='mt-[15px] mb-[8px] ml-[22px] flex items-center gap-[19px]'>
@@ -266,10 +290,10 @@ export default function FeedPageContainer() {
       }
 
       if (page.tweets.length === 0) {
-        setError('Aucun post des comptes suivis pour le moment.')
+        setError(MESSAGES.NO_FOLLOWED_POSTS)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load tweets.'
+      const message = err instanceof Error ? err.message : MESSAGES.TWEETS_LOAD_FAILED
       setError(message)
     } finally {
       setIsLoading(false)
@@ -393,14 +417,14 @@ export default function FeedPageContainer() {
       await deleteTweet(tweetId)
       setTweets((prev) => prev.filter((t) => t.id !== tweetId))
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Impossible de supprimer le tweet.'
+      const message = err instanceof Error ? err.message : MESSAGES.TWEET_DELETE_FAILED
       setError(message)
     }
   }
 
   const handleEditTweet = async (tweetId: string | number, content: string) => {
     if (!content.trim()) {
-      setError('Le tweet ne peut pas être vide.')
+      setError(MESSAGES.TWEET_EMPTY)
       return
     }
     try {
@@ -409,7 +433,7 @@ export default function FeedPageContainer() {
         prev.map((t) => (t.id === tweetId ? updated : t))
       )
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Impossible de modifier le tweet.'
+      const message = err instanceof Error ? err.message : MESSAGES.TWEET_UPDATE_FAILED
       setError(message)
     }
   }
