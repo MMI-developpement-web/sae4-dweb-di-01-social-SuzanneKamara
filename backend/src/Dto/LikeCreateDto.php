@@ -16,6 +16,5 @@ class LikeCreateDto
             message: 'tweet_id doit être un entier'
         )]
         public int $tweet_id,
-    ) {
-    }
+    ) {}
 }

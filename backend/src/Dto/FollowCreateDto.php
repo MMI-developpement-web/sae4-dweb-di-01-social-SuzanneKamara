@@ -16,6 +16,5 @@ class FollowCreateDto
             message: 'following_id doit être un entier'
         )]
         public int $following_id,
-    ) {
-    }
+    ) {}
 }

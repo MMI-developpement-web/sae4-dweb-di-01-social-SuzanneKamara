@@ -23,6 +23,5 @@ class PaginationDto
             message: 'L\'offset ne peut pas dépasser 10 000'
         )]
         public int $offset = 0,
-    ) {
-    }
+    ) {}
 }

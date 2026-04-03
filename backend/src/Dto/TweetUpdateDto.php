@@ -18,6 +18,5 @@ class TweetUpdateDto
             maxMessage: 'Le tweet ne peut pas dépasser 280 caractères'
         )]
         public string $content,
-    ) {
-    }
+    ) {}
 }

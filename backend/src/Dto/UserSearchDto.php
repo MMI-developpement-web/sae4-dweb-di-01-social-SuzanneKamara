@@ -15,6 +15,5 @@ class UserSearchDto
             mode: 'html5'
         )]
         public ?string $email = null,
-    ) {
-    }
+    ) {}
 }

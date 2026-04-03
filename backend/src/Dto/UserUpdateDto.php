@@ -34,6 +34,5 @@ class UserUpdateDto
 
         #[Assert\Url(message: 'Le format de l\'URL de la bannière est invalide')]
         public ?string $banner_url = null,
-    ) {
-    }
+    ) {}
 }

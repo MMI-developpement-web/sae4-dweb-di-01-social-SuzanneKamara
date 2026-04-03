@@ -16,6 +16,5 @@ class BlockCreateDto
             message: 'target_user_id doit être un entier'
         )]
         public int $target_user_id,
-    ) {
-    }
+    ) {}
 }

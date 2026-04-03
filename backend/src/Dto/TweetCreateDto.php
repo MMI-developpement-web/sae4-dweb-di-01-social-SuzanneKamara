@@ -25,6 +25,5 @@ class TweetCreateDto
             maxMessage: 'Un tweet peut contenir au maximum 4 médias'
         )]
         public array $mediaIds = [],
-    ) {
-    }
+    ) {}
 }

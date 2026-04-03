@@ -45,6 +45,5 @@ class UserRegisterDto
             message: 'Le mot de passe doit contenir au moins un caractère spécial'
         )]
         public string $password,
-    ) {
-    }
+    ) {}
 }
